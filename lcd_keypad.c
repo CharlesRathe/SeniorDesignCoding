@@ -15,6 +15,8 @@
 
 #include "Keypad.h"
 #include "LiquidCrystal.h" 
+#include "VirtualWire.h"
+#include "pitches.h"
 
 //////////////////////////
 // Variable Definitions //
@@ -27,6 +29,7 @@ boolean pin_valid;     // True if valid pin is entered
 boolean pin_set;       // True if a pin has been stored in EEPROM
 
 char entered[4] = {};  // Stores user-entered PIN
+char hardCodePIN[4] = {'1', '2', '3', '4'};
 char key;
 const byte ROWS = 4;   // four rows
 const byte COLS = 3;   // three columns
@@ -37,6 +40,14 @@ char keys[ROWS][COLS] =
   {'7','8','9'},
   {'*','0','#'}};
 
+
+int alarm[] = {
+  NOTE_E7, 0, NOTE_E6, 0, NOTE_E7, 0
+
+};
+
+int alarmDurations[] = {9, 3, 12, 3, 9};
+
 byte rowPins[ROWS] = {
   5, 4, 3, 2}; //connect to the row pinouts of the keypad
 byte colPins[COLS] = {
@@ -45,21 +56,24 @@ byte colPins[COLS] = {
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 LiquidCrystal lcd(13, 11, A0, A1, A2, A3);
 
+
 ///////////
 // SETUP //
 ///////////
 
 void setup()
 {
-  pinMode(3, INPUT); // NOTE: RECIEVER HAS TO BE ON THREE FOR UNO 
-    attachInterrupt(digitalPinToInterrupt(3), sound_alarm, RISING);  // SOUNDS ALARM ON RISING ACTION FROM RECIEVER
-  getPin(); // Read PIN from EEPROM, if 0x00 then add setpin to menu
-
   lcd.begin(16,2);  // Set LCD for 16 columns, 2 lines
   lcd.clear();      // Clear LCD and print intro
   delay(50);
   print_intro();
 
+// Set up RF
+  vw_set_ptt_inverted(true); // Required for DR3100
+  vw_set_rx_pin(12);
+  vw_setup(1000);  // Bits per sec
+  pinMode(13, OUTPUT);
+  vw_rx_start();       // Start the receiver PLL running
 }
 
 
@@ -69,11 +83,27 @@ void setup()
 
 void loop()
 {
-  print_menu();
+  if(state == 0){
+    enterPIN();
+  }
+
+// If in State(1): print menu and wait for response
+  else if(state == 1)
+  {
+    print_menu();
+  }
+
+// DISARMED: Check if user is done yet
+  else if(state == 2)
+  {
+
+  }
 }
 
+// ARMED: Prompt user for options
 void print_menu()
 {
+
   boolean selecting = true; // Determines whether the user is selecting an option
   
   lcd.clear();
@@ -134,7 +164,7 @@ void print_menu()
   } 
 }
 
-void enterPIN()
+void PIN_disarm()
 {
   lcd.clear();
   lcd.setCursor(1,0);
@@ -174,8 +204,6 @@ void enterPIN()
           lcd.print("Enter your PIN ('#' to exit)");
           lcd.setCursor(1,1);
           
-          //Serial.println("\nCorrect!");
-          count=0;
         }
     
         else
@@ -201,7 +229,7 @@ bool validate_pin()
   
   for(int i = 0; i <=3; i++)
   {
-    if(!(PIN[i] == entered[i]))
+    if(!(hardCodePIN[i] == entered[i]))
     {
       isValid = false;
     }
@@ -224,17 +252,44 @@ void change_pin()
   // done 
 }
 
-void battery_check()
+void AlarmTest()
 {
-  // SOMEHOW check battery voltage
-  // PRINT TO SCREEN
-  // DELAY
+  // Play alarm once
+    for (int thisNote = 0; thisNote < 78; thisNote++) {
+
+    // to calculate the note duration, take one second
+    // divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000 / noteDurations[thisNote];
+    tone(10, melody[thisNote], noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+    // stop the tone playing:
+    noTone(10);
 }
 
 void sound_alarm()
 {
-  
+  boolean alarmON = TRUE;
+
+// SET UP TIMER and TIMER INTERRUPT
+
+
+
+  }
+
+
+
+
+  }
+
+
 }
+
+
 void print_intro()
 {
   lcd.clear();
