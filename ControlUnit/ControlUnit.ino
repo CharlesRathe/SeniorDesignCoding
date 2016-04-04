@@ -31,10 +31,12 @@ int scroll_count = 0;
   int STATE = 0;            // Defines state of system
   int alarmLength = 28;
   int alarmPin = 10;
+
+  int AlarmLength = 28;
+  int AlarmPin = 10;
   int pin_digits;       // Number of digits in the pin
   
 // Set up Alarm
-  // Set up Alarm
   int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
   NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
   NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,};          
