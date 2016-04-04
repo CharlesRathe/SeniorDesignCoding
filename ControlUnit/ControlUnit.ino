@@ -29,30 +29,123 @@ int scroll_count = 0;
   const int digitAddr = 0;        // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
   int addr;
   int STATE = 0;            // Defines state of system
-  int alarmLength = 28;
+//  int alarmLength = 28;
+  int alarmLength = 44;
   int alarmPin = 10;
 
-  int AlarmLength = 28;
-  int AlarmPin = 10;
   int pin_digits;       // Number of digits in the pin
   
 // Set up Alarm
-  int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
-  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
-  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,};          
+//  int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
+//  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
+//  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,}; 
+
+  int alarm[] = {
+  NOTE_D5 , 
+  NOTE_F5 , 
+   
+    NOTE_D6 , 
+   
   
-  // Holds the notes of the alarm
-  int alarmDurations[] = {
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
- 
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
+    NOTE_D5 , 
+   
+    NOTE_F5 , 
+   
+    NOTE_D6 ,
+   
   
-  };  // Holds duration of alarm notes
+    NOTE_E6 , 
+   
+    NOTE_F6 , 
+   
+    NOTE_E6 , 
+   
+    NOTE_F6 , 
+   
+    NOTE_E6 , 
+   
+    NOTE_C6 , 
+   
+    NOTE_A5 , 
+   
+  
+    NOTE_A5 , 
+   
+    NOTE_D5 , 
+   
+    NOTE_F5 , 
+   
+    NOTE_G5 , 
+   
+    NOTE_A5 , 
+   
+  
+    NOTE_A5 , 
+   
+    NOTE_D5 , 
+   
+    NOTE_F5 , 
+   
+    NOTE_G5 , 
+   
+    NOTE_E5 , 
+   
+  
+  
+  
+    NOTE_D5 , 
+   
+    NOTE_F5 , 
+   
+    NOTE_D6 , 
+   
+  
+    NOTE_D5 , 
+   
+    NOTE_F5 , 
+   
+    NOTE_D6 ,
+   
+  
+    NOTE_E6 , 
+   
+    NOTE_F6 , 
+   
+    NOTE_E6 , 
+   
+    NOTE_F6 , 
+   
+    NOTE_E6 , 
+   
+    NOTE_C6 , 
+   
+    NOTE_A5 , 
+   
+  
+    NOTE_A5 , 
+   
+    NOTE_D5 , 
+   
+    NOTE_F5 , 
+ };
+  
+  
+//  // Holds the notes of the alarm
+//  int alarmDurations[] = {
+//  12, 12, 12, 12,
+//  12, 12, 12, 12,
+//  12, 12, 12, 12,
+//  12, 12, 12, 12,
+// 
+//  12, 12, 12, 12,
+//  12, 12, 12, 12,
+//  12, 12, 12, 12,
+//  
+//  };  // Holds duration of alarm notes
+
+int alarmDurations[] =
+  {8,8,12,8,8,12,12,12,8,8,8,8,8,12,12,8,8,8,8,12,12,8,8,8,8,8,12,8,8,12,12,8,8,8,8,8,8,12,
+12,8,8,8,18,12};
 
 // Set up Keypad and LCD
   const byte ROWS = 4;
