@@ -29,13 +29,28 @@
 	bool pin_valid;     		// True if valid pin is entered
 	bool pin_set;       		// True if a pin has been stored in EEPROM
 
+  int AlarmLength = 28;  //Need to know number of notes in alarm[]
+  int AlarmPin = 10;
 	// char key; Different scope
 	// int option; Different scope
 	// char entered[4] = {};  	// SCOPE
 
 // Set up Alarm
-	int alarm[] = {};      		// Holds the notes of the alarm
-	int alarmDurations[] = {};  // Holds duration of alarm notes
+	int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
+  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
+  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,};      		// Holds the notes of the alarm
+	
+  int alarmDurations[] = {
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  
+  };  // Holds duration of alarm notes
 
 	char memPIN[4] = {};   		// Reserve array to hold PIN from EEPROM
 	const char hardCodePIN =	// Hardcoded PIN for testing (comment out later)
@@ -104,6 +119,24 @@ bool validate_pin()
 
 void sound_alarm()
 {
+  for (int thisNote = 0; thisNote < AlarmLength; thisNote++) {
+
+    // to calculate the note duration, take one second
+    // divided by the note type.
+    //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
+    int noteDuration = 1000 / alarmDurations[thisNote];
+    tone(AlarmPin, melody[thisNote], noteDuration);
+
+    // to distinguish the notes, set a minimum time between them.
+    // the note's duration + 30% seems to work well:
+    int pauseBetweenNotes = noteDuration * 1.30;
+    delay(pauseBetweenNotes);
+
+    // stop the tone playing:
+    noTone(AlarmPin);
+    
+    //Next note!
+  }
   
 }
 
