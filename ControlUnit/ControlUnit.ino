@@ -111,13 +111,13 @@ void loop()
 void test_alarm()
 {
   
-  for (int thisNote = 0; thisNote < AlarmLength; thisNote++) {
+  for (int thisNote = 0; thisNote < alarmLength; thisNote++) {
 
     // to calculate the note duration, take one second
     // divided by the note type.
     //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
     int noteDuration = 1000 / alarmDurations[thisNote];
-    tone(AlarmPin, melody[thisNote], noteDuration);
+    tone(alarmPin, alarm[thisNote], noteDuration);
 
     // to distinguish the notes, set a minimum time between them.
     // the note's duration + 30% seems to work well:
@@ -125,7 +125,7 @@ void test_alarm()
     delay(pauseBetweenNotes);
 
     // stop the tone playing:
-    noTone(AlarmPin);
+    noTone(alarmPin);
     
     //Next note!
   }
