@@ -21,8 +21,9 @@
 	#include "pitches.h"
 
 // Global Variables
-	int eeAddr = 1; 			// Byte of EEPROM where start of PIN is
-	int digitAddr = 0;       	// Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
+	const int eeAddr = 1; 			// Byte of EEPROM where start of PIN is
+	const int digitAddr = 0;       	// Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
+	int addr;
 	int STATE = 0;         		// Defines state of system
 
 	int pin_digits;				// Number of digits in the pin
@@ -66,37 +67,16 @@ void setup()
   print_intro();
 }
 
-
 ///////////
 // Main  //
 ///////////
 
 void loop()
 {
-  print_menu();
+  //print_menu();
+	lcd.print("1");
+	delay(5000);
 }
-
-bool validate_pin()
-{
-  boolean isValid = true;
-  
-  for(int i = 0; i <=3; i++)
-  {
-    if(!(PIN[i] == entered[i]))
-    {
-      isValid = false;
-    }
-  }
-
-  if(isValid)
-  {
-    return true;
-  }
-
-  else
-  { return false;}
-}
-
 
 ///////////////////////////
 //    Alarm Functions    //
@@ -113,47 +93,45 @@ void sound_alarm()
 
 void print_intro()
 {
-  lcd.clear();
-  lcd.setCursor(1,0);
-  lcd.print("Welcome!");
-  lcd.setCursor(1,1);
-  delay(500);
-  lcd.print(".  ");
-  delay(500);
-  lcd.print(". ");
-    delay(500);
-  lcd.print(". ");
 
-  pin_digits = EEPROM.read();
+// Display Welcome message
+	lcd.clear();
+	lcd.setCursor(1,0);
+	lcd.print("Welcome!");
+	lcd.setCursor(1,1);
+	delay(500);
+	lcd.print(".  ");
+	delay(500);
+	lcd.print(". ");
+	delay(500);
+	lcd.print(". ");
 
-  if(pin_digits == 0)
-  {
-  	lcd.print("Enter New pin:");
-  	lcd.setCursor(1,1);
-  	enterNewPIN();
-  }
+// Read first byte of EEPROM for number of digits
+  	pin_digits = EEPROM.read(digitAddr);
 
-  else{
+// If number of digits is 0, prompt enter new PIN
+	if(pin_digits == 0)
+	{
+		lcd.print("Enter New pin:");
+		lcd.setCursor(1,1);
+		enterNewPIN();
+	}
 
-  	lcd.print("Enter your pin:");
-  	lcd.setCursor(1,1);
-  	if(!enterPIN())
-  	{
+// Else enter PIN stored in EEPROM
+	else{enterNewPIN();}
 
-
-  	}
-  }
-
-  lcd.clear();
-  lcd.setCursor(1,0);
-  lcd.print("Please select");
-  lcd.setCursor(1,1);
-  lcd.print("an option");
-  delay(1000);
+// Set up menu Screen
+	lcd.clear();
+	lcd.setCursor(1,0);
+	lcd.print("Please select");
+	lcd.setCursor(1,1);
+	lcd.print("an option");
+	delay(2000);
 }
 
 void print_menu()
 {
+// Boolean to 
   boolean selecting = true; // Determines whether the user is selecting an option
   
   lcd.clear();
@@ -170,7 +148,7 @@ void print_menu()
   }
 
   else if(option == 2){
-    lcd.print("<- CHECKALARM ->");
+    lcd.print("<- CHECK ALARM ->");
   }
 
   while(selecting == true);
@@ -223,14 +201,58 @@ void print_menu()
 
 void enterNewPIN()
 {
+	// Print out instructions to screen
+	lcd.print("New pin (* to clear):");
+	lcd.setCursor(1,1);
 
+	// Scope Variables
+	char key;
+	bool entering = true;
+	int count = 0;
+	char[pin_digits] newPIN = {};
 
-}
+	// While user is still entering
+	while(entering)
+	{
+		// Get input from keypad
+		key = keypad.getKey();
 
-bool enterPIN()
-{
+		// Check if a button has been pressed
+		if(key != NO_KEY)
+		{
+			// Print the key to the screen
+			lcd.print(key);
 
+			// Check if user has pressed '*' (clear)
+			if(key == '*')
+			{
+				// Clear bottom line of LCD, reset count
+				lcd.clear();
+				lcd.print("New pin (* to clear):");
+				lcd.setCursor(1,1);
+				count = 0;
 
+				// Clear array holding pin
+				for(int i = 0; i < pin_digits; i++)
+				{newPIN[i] = 0;}
+			}
+
+			// Check if number entered
+			else{
+
+				// Store in array (increase count)
+				newPIN[count] = key;
+				count++;
+
+				// Check if the correct number of digits has been entered
+				if(count == pin_digits-1)
+				{	
+					// Verify if PIN is correct, if it is exit setup
+					entering = !verifyPIN(newPIN);
+				}
+			}
+		}
+	}
 }
 
 void change_pin()
@@ -242,84 +264,83 @@ void change_pin()
 }
 
 
-void enterPIN()
-{
-  lcd.clear();
-  lcd.setCursor(1,0);
-  lcd.print("Enter your PIN('#' to exit)");  // REMEMBER TO SET TO SCROLL
-  lcd.setCursor(1,1);
+// void enterPIN()
+// {
+//   lcd.clear();
+//   lcd.setCursor(1,0);
+//   lcd.print("Enter your PIN('#' to exit)");  // REMEMBER TO SET TO SCROLL
+//   lcd.setCursor(1,1);
   
-  boolean entering = true;
-  int count = 0;
+//   boolean entering = true;
+//   int count = 0;
   
-  while(entering){
+//   while(entering){
     
-    key = keypad.getKey();
+//     key = keypad.getKey();
     
-    if (key != NO_KEY)
-    {
-      lcd.print(key);
-      entered[count] = key;
-      count++;
+//     if (key != NO_KEY)
+//     {
+//       lcd.print(key);
+//       entered[count] = key;
+//       count++;
   
-      if(key == '#')
-      {
-        entering = false;
-      }
+//       if(key == '#')
+//       {
+//         entering = false;
+//       }
       
-      if(count == 4)
-      {
-        pin_valid = validate_pin();
+//       if(count == 4)
+//       {
+//         pin_valid = validate_pin();
       
-        if (pin_valid)
-        {
-          lcd.clear();
-          lcd.setCursor(1,0);
-          lcd.print("DISARMED!");
-          delay(1000);
-          lcd.clear();
-          lcd.setCursor(1,0);
-          lcd.print("Enter your PIN ('#' to exit)");
-          lcd.setCursor(1,1);
+//         if (pin_valid)
+//         {
+//           lcd.clear();
+//           lcd.setCursor(1,0);
+//           lcd.print("DISARMED!");
+//           delay(1000);
+//           lcd.clear();
+//           lcd.setCursor(1,0);
+//           lcd.print("Enter your PIN ('#' to exit)");
+//           lcd.setCursor(1,1);
           
-          //Serial.println("\nCorrect!");
-          count=0;
-        }
+//           //Serial.println("\nCorrect!");
+//           count=0;
+//         }
     
-        else
-        {
-          lcd.clear();
-          lcd.setCursor(1,0);
-          lcd.print("INCORRECT PIN!");
-          delay(1000);
-          lcd.clear();
-          lcd.setCursor(1,0);
-          lcd.print("Enter your PIN ('#' to exit)");
-          lcd.setCursor(1,1);
-          count=0;
-        }
-      }
-    }
-  }
-}
+//         else
+//         {
+//           lcd.clear();
+//           lcd.setCursor(1,0);
+//           lcd.print("INCORRECT PIN!");
+//           delay(1000);
+//           lcd.clear();
+//           lcd.setCursor(1,0);
+//           lcd.print("Enter your PIN ('#' to exit)");
+//           lcd.setCursor(1,1);
+//           count=0;
+//         }
+//       }
+//     }
+//   }
+// }
 
-bool validate_pin()
+bool verify_pin(char[] newPIN)
 {
-  boolean isValid = true;
+	// Boolean to return
+	boolean isValid = true;
+
+	// Array to store PIN
+	char digit;
+
+	addr = eeAddr;
+
+	// Load the pin from memory, compare to user-entered pin
+	for(i = 0; i < pin_digits; i++)
+	{
+		digit = EEPROM.read(addr++);
+		if(!(newPIN[i] == digit)) {isValid = false;}
+	}
   
-  for(int i = 0; i <=3; i++)
-  {
-    if(!(PIN[i] == entered[i]))
-    {
-      isValid = false;
-    }
-  }
-
-  if(isValid)
-  {
-    return true;
-  }
-
-  else
-  { return false;}
+	return isValid;
 }
