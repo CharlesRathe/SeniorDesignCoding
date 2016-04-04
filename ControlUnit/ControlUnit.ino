@@ -1,3 +1,6 @@
+
+
+
 /***********************************************************************
 *  Program: Control Unit Firmware for the GunSafe EasyUse Locking System 
 *
@@ -18,13 +21,10 @@
   #include "Keypad.h"
   #include "LiquidCrystal.h" 
   #include "EEPROM.h"
-  #include "TimerOne.h"
-  //#include "VirtualWire.h"
-  //#include "pitches.h"
+  #include "VirtualWire.h"
+  #include "pitches.h"
 
 // Function Definitions
-int char_to_digit(char);
-bool verify_PIN(int);
 int scroll_count = 0;
 
 // Global Variables
@@ -61,8 +61,7 @@ void setup()
   lcd.begin(16,2);  // Set LCD for 16 columns, 2 lines
   lcd.clear();      // Clear LCD and print intro
   delay(50);
-  lcd.print("EEPROM = ");
-  lcd.print(EEPROM.read(digitAddr));
+  EEPROM.write(digitAddr, 0);
   delay(2000);
   print_intro();
 }
@@ -229,6 +228,7 @@ void print_menu()
 
 bool verify_PIN(int newPIN[])
 {
+  pin_digits = EEPROM.read(digitAddr);
   // Boolean to return
   boolean isValid = true;
 
@@ -422,7 +422,7 @@ void disarm()
 {
   // Prompt user for PIN
   lcd.clear();
-  lcd.print("Enter PIN");
+  lcd.print("Enter PIN:");
   lcd.setCursor(1,1);
 
   boolean entering = true;
@@ -508,6 +508,7 @@ void state_3(){
 
   lcd.clear();
   lcd.print("Enter PIN to arm (* to clear)");
+  lcd.setCursor(1,1);
   while(disarmed){
 
      key = keypad.getKey();
