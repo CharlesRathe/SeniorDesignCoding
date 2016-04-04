@@ -20,7 +20,7 @@
   #include "EEPROM.h"
   //#include "TimerOne.h"
   //#include "VirtualWire.h"
-  //#include "pitches.h"
+  #include "pitches.h"
 
 // Function Definitions
 int char_to_digit(char);
