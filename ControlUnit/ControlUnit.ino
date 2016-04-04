@@ -1,3 +1,9 @@
+#include <Average.h>
+
+
+
+
+
 /***********************************************************************
 *  Program: Control Unit Firmware for the GunSafe EasyUse Locking System 
 *
@@ -20,6 +26,7 @@
   #include "EEPROM.h"
   #include "VirtualWire.h"
   #include "pitches.h"
+  #include <Average.h>
 
 // Function Definitions
 int scroll_count = 0;
@@ -32,120 +39,32 @@ int scroll_count = 0;
 //  int alarmLength = 28;
   int alarmLength = 44;
   int alarmPin = 10;
-
+  int pressureAvg;
   int pin_digits;       // Number of digits in the pin
+  const int sampleSize = 25;
+  float thresholdValue;
+  Average<float> ave(1);
   
 // Set up Alarm
-//  int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
-//  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
-//  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,}; 
+  int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
+  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
+  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,}; 
 
-  int alarm[] = {
-  NOTE_D5 , 
-  NOTE_F5 , 
-   
-    NOTE_D6 , 
-   
-  
-    NOTE_D5 , 
-   
-    NOTE_F5 , 
-   
-    NOTE_D6 ,
-   
-  
-    NOTE_E6 , 
-   
-    NOTE_F6 , 
-   
-    NOTE_E6 , 
-   
-    NOTE_F6 , 
-   
-    NOTE_E6 , 
-   
-    NOTE_C6 , 
-   
-    NOTE_A5 , 
-   
-  
-    NOTE_A5 , 
-   
-    NOTE_D5 , 
-   
-    NOTE_F5 , 
-   
-    NOTE_G5 , 
-   
-    NOTE_A5 , 
-   
-  
-    NOTE_A5 , 
-   
-    NOTE_D5 , 
-   
-    NOTE_F5 , 
-   
-    NOTE_G5 , 
-   
-    NOTE_E5 , 
-   
-  
-  
-  
-    NOTE_D5 , 
-   
-    NOTE_F5 , 
-   
-    NOTE_D6 , 
-   
-  
-    NOTE_D5 , 
-   
-    NOTE_F5 , 
-   
-    NOTE_D6 ,
-   
-  
-    NOTE_E6 , 
-   
-    NOTE_F6 , 
-   
-    NOTE_E6 , 
-   
-    NOTE_F6 , 
-   
-    NOTE_E6 , 
-   
-    NOTE_C6 , 
-   
-    NOTE_A5 , 
-   
-  
-    NOTE_A5 , 
-   
-    NOTE_D5 , 
-   
-    NOTE_F5 , 
- };
-  
-  
-//  // Holds the notes of the alarm
-//  int alarmDurations[] = {
-//  12, 12, 12, 12,
-//  12, 12, 12, 12,
-//  12, 12, 12, 12,
-//  12, 12, 12, 12,
-// 
-//  12, 12, 12, 12,
-//  12, 12, 12, 12,
-//  12, 12, 12, 12,
-//  
-//  };  // Holds duration of alarm notes
 
-int alarmDurations[] =
-  {8,8,12,8,8,12,12,12,8,8,8,8,8,12,12,8,8,8,8,12,12,8,8,8,8,8,12,8,8,12,12,8,8,8,8,8,8,12,
-12,8,8,8,18,12};
+  
+  
+  // Holds the notes of the alarm
+  int alarmDurations[] = {
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+ 
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  
+  };  // Holds duration of alarm notes
 
 // Set up Keypad and LCD
   const byte ROWS = 4;
@@ -166,6 +85,15 @@ int alarmDurations[] =
 // Setup in STATE 0
 void setup()
 {
+    //Setup for RF transmission **************8
+   Serial.begin(9600);  // Debugging only
+   vw_set_ptt_inverted(true); // Required for DR3100
+   vw_set_rx_pin(12);
+   vw_setup(1000);  // Bits per sec
+   pinMode(13, OUTPUT);
+   vw_rx_start();       // Start the receiver PLL running
+   //RF Transmission setup end**************8
+   
   lcd.begin(16,2);  // Set LCD for 16 columns, 2 lines
   lcd.clear();      // Clear LCD and print intro
   delay(50);
@@ -542,6 +470,77 @@ void change_pin()
     }
   }
 }
+
+void configure_cabinet_pressure()
+{
+  
+  //Array for Samples
+  int samples[25];
+
+  //RF Buffer Vars
+  uint8_t buf[VW_MAX_MESSAGE_LEN];
+  uint8_t buflen = VW_MAX_MESSAGE_LEN;
+
+  //Keypad Vars
+  boolean entering = true;
+  char key;
+
+  Average<int> ave(25);
+  
+  //Print please close cabinet
+  //Print Press * when ready
+  lcd.clear();
+  lcd.print("Close Cabinet");
+  lcd.setCursor(1,1);
+  lcd.print("Then Press *");
+ 
+  // While user is still entering
+  while(entering)
+  {
+    // Get input from keypad
+    key = keypad.getKey();
+
+    // Check if a button has been pressed
+    if(key != NO_KEY)
+    {
+
+      // Check if user has pressed '*'
+      if(key == '*')
+      {
+        
+        lcd.clear();
+        lcd.print("Configuring...");
+
+        //read data in from RF sampleSize times and store in samples[]
+        for(int i=0;i < sampleSize;i++)
+        {
+          
+          //Listen to RF, collect sample data
+          if (vw_get_message(buf, &buflen)) // Non-blocking
+          {
+
+              //add sample to sample array
+              //samples[i] = buf[0];  //**********MAY NEED SOME CONVERTING INTO DECIMAL NUMBER FROM BUFFER
+              ave.push(buf[0]);
+              
+              
+          }//end if
+
+        }//end for
+
+        //take average of array values
+        pressureAvg = ave.mean();
+
+        // set threshold to -30%??  of average value?
+        thresholdValue = pressureAvg - pressureAvg*(0.3);
+
+        entering = false; //clear entering flag
+          
+   }//end if key ==*       
+  }//end if key !=no key
+ }//end while(entering)
+}//end configure
+
 
 void disarm()
 {
