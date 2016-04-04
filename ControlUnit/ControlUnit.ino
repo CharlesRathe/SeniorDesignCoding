@@ -19,7 +19,7 @@
   #include "LiquidCrystal.h" 
   #include "EEPROM.h"
   //#include "TimerOne.h"
-  //#include "VirtualWire.h"
+  #include "VirtualWire.h"
   #include "pitches.h"
 
 // Function Definitions
