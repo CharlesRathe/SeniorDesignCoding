@@ -1,9 +1,3 @@
-#include <Average.h>
-
-
-
-
-
 /***********************************************************************
 *  Program: Control Unit Firmware for the GunSafe EasyUse Locking System 
 *
@@ -531,7 +525,11 @@ void configure_cabinet_pressure()
 
         // set threshold to -30%??  of average value?
         thresholdValue = pressureAvg - pressureAvg*(0.3);
-
+        lcd.clear();
+        lcd.print("Configured");
+        lcd.setCursor(1,1);
+        lcd.print(thresholdValue);
+ 
         entering = false; //clear entering flag
           
    }//end if key ==*       
