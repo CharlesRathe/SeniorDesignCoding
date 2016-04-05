@@ -36,14 +36,12 @@ int scroll_count = 0;
   const int digitAddr = 0;        // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
   int addr;
   int STATE = 0;            // Defines state of system
-//  int alarmLength = 28;
-  int alarmLength = 44;
+  int alarmLength = 28;
   int alarmPin = 10;
   int pressureAvg;
   int pin_digits;       // Number of digits in the pin
   const int sampleSize = 25;
   float thresholdValue;
-  Average<float> ave(1);
   
 // Set up Alarm
   int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
