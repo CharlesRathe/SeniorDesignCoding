@@ -1,87 +1,8 @@
+#include <Average.h>
+
 //simple Tx on pin D12
 //Written By : Mohannad Rawashdeh
 // 3:00pm , 13/6/2013
-//http://www.genotronex.com/
-//..................................
-#include <VirtualWire.h>
-#include "pitches.h"
-
-// notes in the melody:
-int melody[] = {
-  NOTE_E7, NOTE_E7, 0, NOTE_E7,
-  0, NOTE_C7, NOTE_E7, 0,
-  NOTE_G7, 0, 0,  0,
-  NOTE_G6, 0, 0, 0,
- 
-  NOTE_C7, 0, 0, NOTE_G6,
-  0, 0, NOTE_E6, 0,
-  0, NOTE_A6, 0, NOTE_B6,
-  0, NOTE_AS6, NOTE_A6, 0,
- 
-  NOTE_G6, NOTE_E7, NOTE_G7,
-  NOTE_A7, 0, NOTE_F7, NOTE_G7,
-  0, NOTE_E7, 0, NOTE_C7,
-  NOTE_D7, NOTE_B6, 0, 0,
- 
-  NOTE_C7, 0, 0, NOTE_G6,
-  0, 0, NOTE_E6, 0,
-  0, NOTE_A6, 0, NOTE_B6,
-  0, NOTE_AS6, NOTE_A6, 0,
- 
-  NOTE_G6, NOTE_E7, NOTE_G7,
-  NOTE_A7, 0, NOTE_F7, NOTE_G7,
-  0, NOTE_E7, 0, NOTE_C7,
-  NOTE_D7, NOTE_B6, 0, 0
-};
-
-//int melody[] = {
-//  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4,0
-//};
-//
-//int noteDurations[] = {
-//  4, 8, 8, 4, 4, 4, 4, 4,0
-//};
-
-// note durations: 4 = quarter note, 8 = eighth note, etc.:
-int noteDurations[] = {
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
- 
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
- 
-  9, 9, 9,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
- 
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
- 
-  9, 9, 9,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-};
-
-
-void setup()
-{ 
-  Serial.begin(9600);  // Debugging only
-    Serial.println("setup");
-    vw_set_ptt_inverted(true); // Required for DR3100
-    vw_set_rx_pin(12);
-    vw_setup(1000);  // Bits per sec
-    pinMode(13, OUTPUT);
-    vw_rx_start();       // Start the receiver PLL running
-}
-
 void loop()
 {
     uint8_t buf[VW_MAX_MESSAGE_LEN];
@@ -92,6 +13,9 @@ void loop()
     if (vw_get_message(buf, &buflen)) // Non-blocking
     {
         int i;
+    int sampleSize = 20;
+    Average<int> ave(25);
+    int thresholdValue;
     
         if(buf[0]=='1'){
           digitalWrite(13,1);
@@ -108,8 +32,40 @@ void loop()
          
 
         }//end if
+        //read data in from RF sampleSize times and store in samples[]
+        //for(int i=0;i < sampleSize;i++)
+        //{
+
+           //Serial.print("in sample");
+          
+          //Listen to RF, collect sample data
+          if (vw_get_message(buf, &buflen)) // Non-blocking
+          {
+            
+              Serial.println("Got: ");
+              Serial.println(buf[0]);
+              //add sample to sample array
+              //samples[i] = buf[0];  //**********MAY NEED SOME CONVERTING INTO DECIMAL NUMBER FROM BUFFER
+              //ave.push(buf[0]);
+              //Serial.print("Received and Pushed: ");
+              //Serial.print(buf[0]);
+              
+              
+          }//end if
+
+       // }//end for
+
+        //take average of array values
+        //int pressureAvg = ave.mean();
+
+        // set threshold to -30%??  of average value?
+       // thresholdValue = pressureAvg - pressureAvg*(0.3);
+        //Serial.print("Threshold Set To: ");
+        //Serial.println(thresholdValue);
+
 
 }
+
 
 
 void soundZeAlarm()
