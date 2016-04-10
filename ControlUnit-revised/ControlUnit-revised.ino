@@ -11,7 +11,6 @@
 *         LCD -> Using LiquidCrystal library
 *         RF Receier -> Using VirtualWire library
 *
-*
 ************************************************************************/
 
 // Referenced Libraries
@@ -24,78 +23,25 @@
 // Global Variables
   const int eeAddr = 1;                   // Byte of EEPROM where start of PIN is
   const int digitAddr = 0;                // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
-  const int alarmLength_zelda = 54;       // Length of zelda alarm (# of pitches)
-  const int alarmLength_two_pitch = 28;   // Length of two pitch alarm
+  const int rxPin = 9;                    // Defines which PIN recieves data from transmitter
   const int alarmPin = 10;                // Defines PIN which alarm is sent to
-  // const int transmit_PIN = 13;               // Defines which PIN recieves data from transmitter
-  // const int tiny45_PIN = ???;
   
   int addr;                               // Holds current address
   int STATE = 0;                          // Defines state of system
-  int alarmChoice = 0;                    // 0: Two_pitch, 1: Zelda
-
   int pin_digits;                         // Number of digits in the pin
   int option = 0;                         // Holds current menu option
   int count = 0;                          // Generic counting variable
   int digit = 0;                          // Temporarily holds digits
   
+  float reading;                          // Holds reading from rf
+  
   bool selecting;                         // Determines whether the user is selecting an option
   bool entering;                          // Determines whether the user is entering a PIN
   bool isValid;                           // Return value after validating PIN
-  bool alarm_on = false;
+  bool alarm_on = false;                  // Determines if the alarm is on or not
   
   char key;                               // Holds characters read from KeyPad
   char newPIN[9];                         // Holds user-entered PIN
-  
-// Set up different alarms
-  const int alarm_two_pitch[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
-  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
-  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,}; 
-
-  const int alarm_zelda[] = {
-  NOTE_G6, 0, NOTE_D6, 0, 
-  NOTE_G6, NOTE_G6, NOTE_A6, NOTE_B6, 
-  NOTE_C7, NOTE_D7, 0, NOTE_D7,
-  NOTE_D7, NOTE_DS7, NOTE_F7, NOTE_G7,  
-  0, NOTE_G7, NOTE_G7, NOTE_F7,  
-  NOTE_DS7, NOTE_F7, NOTE_DS7,NOTE_D7,
-  NOTE_D7, NOTE_C7, NOTE_C7, NOTE_D7,
-  NOTE_DS7, NOTE_D7, NOTE_C7, NOTE_AS6,
-  NOTE_AS6, NOTE_C7, NOTE_D7,NOTE_C7,
-  NOTE_AS6, NOTE_A6, NOTE_A6, NOTE_B6,
-  NOTE_CS7, NOTE_E7, NOTE_D7, NOTE_D6,
-  NOTE_D6, NOTE_D6, NOTE_D6, NOTE_D6, 
-  NOTE_D6, NOTE_D6, NOTE_D6, NOTE_D6,
-  NOTE_D6, NOTE_D6,
- };
-
-  const int alarmDurations_zelda[] = {
-    6,  9,  4,  8,  
-    8,  16, 16, 16,
-    16, 2,  8,  8, 
-    12, 12, 12, 2,
-    8,  8,  12, 12,
-    12, 8,  16, 2,
-    4,  8,  16, 16,
-    2,  8,  8,  8,
-    16, 16, 2,  8,
-    8,  8,  16, 16,
-    2,  4,  8,  16,
-    16, 8,  16, 16,
-    8,  24, 24, 24,
-    8,  4,
-  };
-  
-// Holds the notes of the alarm
-  const int alarmDurations_two_pitch[] = {
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  12, 12, 12, 12,
-  };
 
 // Set up Keypad and LCD
   const byte ROWS = 4;
@@ -118,17 +64,25 @@
 ////////////////////////////////////////////////////////////////////
 
 void setup(){
-  
-  // pinMode(transmit_PIN, INPUT);  // Set input pin as an input
-  // pinMode(tiny45_PIN, OUTPUT);
 
-  //setup_transmitter();        // Set up transmitter
-  setup_timer();              // Set up timer
+// Set up Serial (debugging)
+  Serial.begin(9600);
   
+// Set up pin I/O
+  pinMode(rxPin, INPUT);  
+  pinMode(alarmPin, OUTPUT);
+
+// Set up RF Transmitter and Timer 0
+  setup_transmitter();    
+  setup_timer();           
+
+// Set up LCD
   lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
   lcd.clear();                // Clear LCD and print intro
+
+// Short delay, then go to setup state
   delay(50);
-  state_zero();               // Welcome and prompt user for new pin
+  state_zero();          
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -205,16 +159,11 @@ void menu_state(){
     }
 
   // This option allows the user to change the alarm to one of several presets
-    else if(option == 3){
-      lcd.setCursor(1,1);
-      lcd.print("<- CHNGALARM ->");
-    }
-
     else{
       lcd.setCursor(1,1);
       lcd.print("<- CALIBRATE ->");
     }
-    
+
     // Get user selection
      while(entering){
         get_selection();
@@ -223,50 +172,27 @@ void menu_state(){
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-//                              Interrupt/Timer Functions                          //
+//                                Reciever Functions                               //
 /////////////////////////////////////////////////////////////////////////////////////
-
-void setup_transmitter()
-{
-  
-  
-}
 
 void setup_timer(){
 
-  // Set 
-  OCR0A = 0xFF;
-  
-  TIMSK0 |= _BV(OCIE0A);
-  // Set Timer 0 to interrupt on CTC
-  TCCR0A |= (1 << WGM01);
-  
-  // Set timer zero to prescale by 1024
-  TCCR0B |= (1 << CS12) | (1 << CS10);
-  
-  timer_count = 0;
 }
 
-ISR(TIMER0_COMPA_vect){
 
-  if(STATE == 1){
-    // If analog read is over, go to state 3 (triggered)
-  }
 
-  if(STATE == 3){
-    // DILEMMA: How do we keep the alarm going while the pin is entered?
-    
-  }
-
-  // If STATE 0 or 2 do nothing
-}
 
 /////////////////////////////////////////////////////////////////////////////////////
 //                           Transmission Functions                                //
 /////////////////////////////////////////////////////////////////////////////////////
 
+void setup_transmitter(){
 
-
+// Configure pins/settings
+  vw_set_rx_pin(rxPin);
+  vw_set_ptt_inverted(true);
+  vw_setup(2000);
+}
 
 /////////////////////////////////////////////////////////////////////////////////////
 //                                Display Functions                                //
@@ -347,91 +273,9 @@ void print_incorrect_PIN(){
 
 void test_alarm(){
 
-//  alarm_on = true;
-//  
-//  if(alarmChoice == 0)
-//  {
-//    for (int thisNote = 0; thisNote < alarmLength; thisNote++) {
-//
-//      // to calculate the note duration, take one second
-//      // divided by the note type.
-//      //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-//      int noteDuration = 1400 / alarmDurations[thisNote];
-//      tone(alarmPin, alarm[thisNote], noteDuration);
-//  
-//      // to distinguish the notes, set a minimum time between them.
-//      // the note's duration + 30% seems to work well:
-//      int pauseBetweenNotes = noteDuration * 1.30;
-//      delay(pauseBetweenNotes);
-//  
-//      // stop the tone playing:
-//      noTone(alarmPin);
-//
-//      if(!alarm_on){
-//        STATE = 1;
-//        thisNote = alarmLength_two_pitch;
-//      }
-//        
-//      //Next note!
-//    }
-//  }
-//
-//  else if(alarmChoice == 1)
-//  {
-//    for (int thisNote = 0; thisNote < alarmLength_zelda; thisNote++) {
-//  
-//      // to calculate the note duration, take one second
-//      // divided by the note type.
-//      //e.g. quarter note = 1000 / 4, eighth note = 1000/8, etc.
-//      int noteDuration = 1400 / alarmDurations_zelda[thisNote];
-//      tone(alarmPin, alarm_zelda[thisNote], noteDuration);
-//  
-//      // to distinguish the notes, set a minimum time between them.
-//      // the note's duration + 30% seems to work well:
-//      int pauseBetweenNotes = noteDuration * 1.30;
-//      delay(pauseBetweenNotes);
-//  
-//      // stop the tone playing:
-//      noTone(alarmPin);
-//
-//      if(!alarm_on){
-//        STATE = 1;
-//        thisNote = alarmLength_zelda;
-//      }
-//      
-//      //Next note!
-//    }
-//  }
-}
-
-void change_alarm(){
-
-  selecting = true;
-  option = 0;
-
-  print_choose_alarm();
-
-  lcd.clear();
-  lcd.setCursor(1,0);
-  lcd.print("Choose alarm: ");
-
-  while(selecting){
-
-    entering = true;
-
-    if(option == 0){
-      lcd.setCursor(1, 1);
-      lcd.print("<- Two Pitch ->");
-    }
-    
-    else if(option == 1){
-        lcd.setCursor(1,1);
-        lcd.print("<-   Zelda   ->");
-    }
-  
-    while(entering)
-      select_alarm();
-  }
+    digitalWrite(10, HIGH);
+    delay(6000);
+    digitalWrite(10, LOW);
 }
 
 void calibrate_alarm(){
@@ -535,7 +379,7 @@ void enterNewPIN()
         // Convert ASCII character to digit and store in EEPROM
         digit = key-48;
 
-        if(digit != 0){
+        if(digit > 1){
           EEPROM.write(digitAddr, digit);
 
         // Store new digits locally and exit loop
@@ -546,7 +390,7 @@ void enterNewPIN()
         else{
           lcd.clear();
           lcd.setCursor(1,0);
-          lcd.print("Must be > 0!");
+          lcd.print("Must be > 1!");
           delay(2000);
         }
       }
@@ -620,7 +464,7 @@ void get_selection(){
   {
     // If key is 6, increment menu
     if(key == '6'){
-      if(option != 4)
+      if(option != 3)
           option += 1;
       else
           option = 0;
@@ -631,7 +475,7 @@ void get_selection(){
       if(option != 0)
           option -= 1;
       else
-          option = 4;
+          option = 3;
     }
 
     // If '#' select option
@@ -663,55 +507,11 @@ void get_selection(){
           else if(option == 2){
             test_alarm();}
 
-          else if(option == 3){
-            change_alarm();}
-
           else
             calibrate_alarm();
-        
 
             selecting = false;
     }
     entering = false; 
-  }
-}
-
-void select_alarm(){
-
-  key = keypad.getKey();
-  
-  // Check if key is pressed
-  if (key != NO_KEY)
-  {
-    // If key is 6, increment menu
-    if(key == '6'){
-      if(option == 1)
-          option = 0;
-      else
-          option = 1;
-    }
-    
-    // If key is 4, decrement menu
-    else if(key == '4'){
-      if(option != 0)
-          option = 0;
-      else
-          option = 1;
-    }
-
-    else if(key == '*')
-      selecting = false;
-
-    // If '#' select option
-    else if(key == '#'){
-      if(option == 0)
-        alarmChoice = 0;
-        
-      else if(option == 1)
-        alarmChoice = 1;
-        
-      selecting = false;
-    } 
-entering = false;
   }
 }
