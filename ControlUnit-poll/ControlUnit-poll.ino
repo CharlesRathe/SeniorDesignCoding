@@ -25,24 +25,21 @@
   const int digitAddr = 0;                // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
   const int rxPin = 9;                    // Defines which PIN recieves data from transmitter
   const int alarmPin = 10;                // Defines PIN which alarm is sent to
-  const int timerIter = 61;               // 16ms per count
   
   const float defaultTH = 70;             // Default pressure threshhold for alarm (V)
   
   int addr;                               // Holds current address
-  int STATE = 0;                          // Defines state of system (Armed : 1)
+  int STATE = 0;                          // Defines state of system (Disarmed -> 1)
   int pin_digits;                         // Number of digits in the pin
   int option = 0;                         // Holds current menu option
   int count = 0;                          // Generic counting variable
   int digit = 0;                          // Temporarily holds digits
-  int timerCount = 0;                     // Keeps track of # of timer cycles
   int currentTH = 70;                     // Current threshhold set by user (V)
   int reading;                            // Holds reading from rf
   
   bool selecting;                         // Determines whether the user is selecting an option
   bool entering;                          // Determines whether the user is entering a PIN
   bool isValid;                           // Return value after validating PIN
-  bool rx_wait = true;                    // Loop variable for recieving message
   
   char key;                               // Holds characters read from KeyPad
   char newPIN[9];                         // Holds user-entered PIN
@@ -68,9 +65,6 @@
 ////////////////////////////////////////////////////////////////////
 
 void setup(){
-
-// Disable Interrupts
-  cli();
   
 // Set up Serial (debugging)
   Serial.begin(9600);
@@ -97,11 +91,16 @@ void setup(){
 /////////////////////////////////////////////////////////////////////
 
 void loop(){
+
+// If not alarm state, go to menu
   if(STATE != 3)
     menu_state();
+    
+// Else need to turn off alarm
   else{
     if(enterPIN()){
       STATE = 1;
+      digitalWrite(alarmPin, LOW);
     }
   }
 }
