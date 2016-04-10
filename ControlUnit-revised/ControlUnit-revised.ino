@@ -172,13 +172,12 @@ void menu_state(){
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-//                                Reciever Functions                               //
+//                                 Timer Functions                                 //
 /////////////////////////////////////////////////////////////////////////////////////
 
 void setup_timer(){
 
 }
-
 
 
 
@@ -226,12 +225,12 @@ void print_instructions(){
   lcd.print("'#' to select");
 }
 
-void print_choose_alarm(){
+void print_disable_alarm(){
   lcd.clear();
   lcd.setCursor(1,0);
-  lcd.print("Choose alarm:");
+  lcd.print(" ***TESTING*** ");
   lcd.setCursor(1,1);
-  lcd.print("*-> quit, #-> choose"); 
+  lcd.print("  '#' to stop  "); 
   delay(2000);
 }
 
@@ -273,8 +272,23 @@ void print_incorrect_PIN(){
 
 void test_alarm(){
 
+    print_disable_alarm();
+    delay(100);
     digitalWrite(10, HIGH);
-    delay(6000);
+    bool testing = true;
+
+    while(testing){
+
+      // Get input from keypad
+      key = keypad.getKey();
+
+      // If input is '#' -> Stop testing
+      if(key != NO_KEY){
+        if(key == '#'){
+          testing = false;  
+      }
+    }
+    
     digitalWrite(10, LOW);
 }
 
