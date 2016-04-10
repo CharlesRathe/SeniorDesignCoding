@@ -23,7 +23,6 @@
   #include <Average.h>
 
 // Global Variables
-<<<<<<< HEAD
   const int eeAddr = 1;                   // Byte of EEPROM where start of PIN is
   const int digitAddr = 0;                // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
   const int alarmLength_zelda = 54;       // Length of zelda alarm (# of pitches)
@@ -89,16 +88,12 @@
   };
   
 // Holds the notes of the alarm
-  const int alarmDurations_two_pitch[] = {
-=======
-  const int eeAddr = 1;       // Byte of EEPROM where start of PIN is
-  const int digitAddr = 0;        // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
-  int addr;
-  int STATE = 0;            // Defines state of system
+  const int alarmDurations_two_pitch[] = {};
+
   int alarmLength = 28;
-  int alarmPin = 10;
+ 
   int pressureAvg;
-  int pin_digits;       // Number of digits in the pin
+  
   const int sampleSize = 25;
   float thresholdValue;
   
@@ -112,24 +107,20 @@
   
   // Holds the notes of the alarm
   int alarmDurations[] = {
->>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,
-<<<<<<< HEAD
+
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,
-  };
-=======
  
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,
   
   };  // Holds duration of alarm notes
->>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
 
 // Set up Keypad and LCD
   const byte ROWS = 4;
@@ -147,7 +138,6 @@
   Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   LiquidCrystal lcd(13, 11, A0, A1, A2, A3);
 
-<<<<<<< HEAD
 ////////////////////////////////////////////////////////////////////
 //                          Setup                                 //
 ////////////////////////////////////////////////////////////////////
@@ -162,10 +152,9 @@ void setup(){
   
   lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
   lcd.clear();                // Clear LCD and print intro
-=======
+  
 // Setup in STATE 0
-void setup()
-{
+
     //Setup for RF transmission **************8
    Serial.begin(9600);  // Debugging only
    vw_set_ptt_inverted(true); // Required for DR3100
@@ -177,7 +166,7 @@ void setup()
    
   lcd.begin(16,2);  // Set LCD for 16 columns, 2 lines
   lcd.clear();      // Clear LCD and print intro
->>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
+
   delay(50);
   state_zero();               // Welcome and prompt user for new pin
 }
@@ -287,7 +276,7 @@ void setup_timer(){
 
   OCR0A = 0xAF;
   TIMSK0 |= _BV(OCIE0A);
-  timer_count = 0;
+//  timer_count = 0;
 }
 
 ISR(TIMER0_COMPA_vect){
@@ -596,16 +585,13 @@ void enterNewPIN()
     }      
   }
 
-<<<<<<< HEAD
+ 
   // Reset variables and LCD
   entering = true;
-=======
+}
 void configure_cabinet_pressure()
 {
   
-  //Array for Samples
-  int samples[25];
-
   //RF Buffer Vars
   uint8_t buf[VW_MAX_MESSAGE_LEN];
   uint8_t buflen = VW_MAX_MESSAGE_LEN;
@@ -649,7 +635,7 @@ void configure_cabinet_pressure()
           {
 
               //add sample to sample array
-              //samples[i] = buf[0];  //**********MAY NEED SOME CONVERTING INTO DECIMAL NUMBER FROM BUFFER
+              //**********MAY NEED SOME CONVERTING INTO DECIMAL NUMBER FROM BUFFER
               ave.push(buf[0]);
               
               
@@ -678,7 +664,6 @@ void configure_cabinet_pressure()
 void disarm()
 {
   // Prompt user for PIN
->>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
   lcd.clear();
   lcd.print("Enter new PIN:");
   lcd.setCursor(1,1);
