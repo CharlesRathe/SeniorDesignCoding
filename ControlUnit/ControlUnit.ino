@@ -20,8 +20,10 @@
   #include "EEPROM.h"
   #include "VirtualWire.h"
   #include "pitches.h"
+  #include <Average.h>
 
 // Global Variables
+<<<<<<< HEAD
   const int eeAddr = 1;                   // Byte of EEPROM where start of PIN is
   const int digitAddr = 0;                // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
   const int alarmLength_zelda = 54;       // Length of zelda alarm (# of pitches)
@@ -88,14 +90,46 @@
   
 // Holds the notes of the alarm
   const int alarmDurations_two_pitch[] = {
+=======
+  const int eeAddr = 1;       // Byte of EEPROM where start of PIN is
+  const int digitAddr = 0;        // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
+  int addr;
+  int STATE = 0;            // Defines state of system
+  int alarmLength = 28;
+  int alarmPin = 10;
+  int pressureAvg;
+  int pin_digits;       // Number of digits in the pin
+  const int sampleSize = 25;
+  float thresholdValue;
+  
+// Set up Alarm
+  int alarm[] = {NOTE_F7, 0, NOTE_C7, 0, NOTE_F7, 0, NOTE_C7, 0, 
+  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,
+  NOTE_F7, 0, NOTE_C7, 0,NOTE_F7, 0, NOTE_C7, 0,}; 
+
+
+  
+  
+  // Holds the notes of the alarm
+  int alarmDurations[] = {
+>>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,
+<<<<<<< HEAD
   12, 12, 12, 12,
   12, 12, 12, 12,
   12, 12, 12, 12,
   };
+=======
+ 
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  12, 12, 12, 12,
+  
+  };  // Holds duration of alarm notes
+>>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
 
 // Set up Keypad and LCD
   const byte ROWS = 4;
@@ -113,6 +147,7 @@
   Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   LiquidCrystal lcd(13, 11, A0, A1, A2, A3);
 
+<<<<<<< HEAD
 ////////////////////////////////////////////////////////////////////
 //                          Setup                                 //
 ////////////////////////////////////////////////////////////////////
@@ -127,6 +162,22 @@ void setup(){
   
   lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
   lcd.clear();                // Clear LCD and print intro
+=======
+// Setup in STATE 0
+void setup()
+{
+    //Setup for RF transmission **************8
+   Serial.begin(9600);  // Debugging only
+   vw_set_ptt_inverted(true); // Required for DR3100
+   vw_set_rx_pin(12);
+   vw_setup(1000);  // Bits per sec
+   pinMode(13, OUTPUT);
+   vw_rx_start();       // Start the receiver PLL running
+   //RF Transmission setup end**************8
+   
+  lcd.begin(16,2);  // Set LCD for 16 columns, 2 lines
+  lcd.clear();      // Clear LCD and print intro
+>>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
   delay(50);
   state_zero();               // Welcome and prompt user for new pin
 }
@@ -545,8 +596,89 @@ void enterNewPIN()
     }      
   }
 
+<<<<<<< HEAD
   // Reset variables and LCD
   entering = true;
+=======
+void configure_cabinet_pressure()
+{
+  
+  //Array for Samples
+  int samples[25];
+
+  //RF Buffer Vars
+  uint8_t buf[VW_MAX_MESSAGE_LEN];
+  uint8_t buflen = VW_MAX_MESSAGE_LEN;
+
+  //Keypad Vars
+  boolean entering = true;
+  char key;
+
+  Average<int> ave(25);
+  
+  //Print please close cabinet
+  //Print Press * when ready
+  lcd.clear();
+  lcd.print("Close Cabinet");
+  lcd.setCursor(1,1);
+  lcd.print("Then Press *");
+ 
+  // While user is still entering
+  while(entering)
+  {
+    // Get input from keypad
+    key = keypad.getKey();
+
+    // Check if a button has been pressed
+    if(key != NO_KEY)
+    {
+
+      // Check if user has pressed '*'
+      if(key == '*')
+      {
+        
+        lcd.clear();
+        lcd.print("Configuring...");
+
+        //read data in from RF sampleSize times and store in samples[]
+        for(int i=0;i < sampleSize;i++)
+        {
+          
+          //Listen to RF, collect sample data
+          if (vw_get_message(buf, &buflen)) // Non-blocking
+          {
+
+              //add sample to sample array
+              //samples[i] = buf[0];  //**********MAY NEED SOME CONVERTING INTO DECIMAL NUMBER FROM BUFFER
+              ave.push(buf[0]);
+              
+              
+          }//end if
+
+        }//end for
+
+        //take average of array values
+        pressureAvg = ave.mean();
+
+        // set threshold to -30%??  of average value?
+        thresholdValue = pressureAvg - pressureAvg*(0.3);
+        lcd.clear();
+        lcd.print("Configured");
+        lcd.setCursor(1,1);
+        lcd.print(thresholdValue);
+ 
+        entering = false; //clear entering flag
+          
+   }//end if key ==*       
+  }//end if key !=no key
+ }//end while(entering)
+}//end configure
+
+
+void disarm()
+{
+  // Prompt user for PIN
+>>>>>>> c12544d6e7d3627a775e7c597ee1aa0fb9592f0e
   lcd.clear();
   lcd.print("Enter new PIN:");
   lcd.setCursor(1,1);
