@@ -25,20 +25,24 @@
   const int digitAddr = 0;                // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
   const int rxPin = 9;                    // Defines which PIN recieves data from transmitter
   const int alarmPin = 10;                // Defines PIN which alarm is sent to
+  const int timerIter = 61;               // 16ms per count
+  
+  const float defaultTH = 70;             // Default pressure threshhold for alarm (V)
   
   int addr;                               // Holds current address
-  int STATE = 0;                          // Defines state of system
+  int STATE = 0;                          // Defines state of system (Armed : 1)
   int pin_digits;                         // Number of digits in the pin
   int option = 0;                         // Holds current menu option
   int count = 0;                          // Generic counting variable
   int digit = 0;                          // Temporarily holds digits
-  
-  float reading;                          // Holds reading from rf
+  int timerCount = 0;                     // Keeps track of # of timer cycles
+  int currentTH = 70;                     // Current threshhold set by user (V)
+  int reading;                            // Holds reading from rf
   
   bool selecting;                         // Determines whether the user is selecting an option
   bool entering;                          // Determines whether the user is entering a PIN
   bool isValid;                           // Return value after validating PIN
-  bool alarm_on = false;                  // Determines if the alarm is on or not
+  bool rx_wait = true;                    // Loop variable for recieving message
   
   char key;                               // Holds characters read from KeyPad
   char newPIN[9];                         // Holds user-entered PIN
@@ -65,6 +69,9 @@
 
 void setup(){
 
+// Disable Interrupts
+  cli();
+  
 // Set up Serial (debugging)
   Serial.begin(9600);
   
@@ -82,7 +89,9 @@ void setup(){
 
 // Short delay, then go to setup state
   delay(50);
-  state_zero();          
+  state_zero();  
+
+  sei();
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -177,6 +186,73 @@ void menu_state(){
 
 void setup_timer(){
 
+// Set timer0 interrupt at 61Hz (one per minute)
+  TCCR0A = 0;// set entire TCCR0A register to 0
+  TCCR0B = 0;// same for TCCR0B
+  TCNT0  = 0;//initialize counter value to 0
+  
+// Set compare match register for 2khz increments
+  OCR0A = 255;// = (16*10^6) / (2000*64) - 1 (must be <256)
+  
+// Turn on CTC mode
+  TCCR0A |= (1 << WGM01);
+  
+// Set CS01 and CS00 bits for 1024 prescaler
+  TCCR0B |= (0 << CS01) | (1 << CS00)| (1 << CS02);
+     
+// Enable timer compare interrupt
+  TIMSK0 |= (1 << OCIE0A);
+
+}
+
+ISR(TIMER0_COMPA_vect){//timer1 interrupt 61Hz (61 cycels per second)
+
+  cli();
+  
+  if(timerCount == timerIter){
+
+    if(STATE == 2){
+
+    // Set up local variables
+      uint8_t buf[4];
+      uint8_t buflen = 4;
+      String msg = "";
+
+      vw_rx_start();
+      
+      while(rx_wait){
+      // Wait for message
+        if(vw_get_message(buf, &buflen)){
+          
+        // Exit Loop
+           rx_wait = false;
+           
+        // Print out recieved data (debugging)
+          Serial.print("Got: ");
+      
+          for(int i=0; i<buflen; i++){
+            msg += (char) buf[i];
+            Serial.print(msg[i]);
+            Serial.print(' ');
+          }
+
+          Serial.print("    String: ");
+          Serial.print(msg);
+  
+          // if(msg.toFloat() >= currentTH)
+              // soundAlarm();
+      
+          Serial.println();
+        }
+      }
+      timerCount = 0;
+    }
+  }
+  
+// Increment timer Count
+  timerCount++;
+
+  sei();
 }
 
 
@@ -284,7 +360,7 @@ void test_alarm(){
 
       // If input is '#' -> Stop testing
       if(key != NO_KEY){
-        if(key == '#'){
+        if(key == '#')
           testing = false;  
       }
     }

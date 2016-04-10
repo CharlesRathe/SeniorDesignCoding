@@ -26,17 +26,12 @@
   #include "VirtualWire.h"
 
 // Gloabal Variables
-  const float convert = (5.0/1023);   // Constant to convert adc value
   const int outputPin = 12;           // Output pin for rf
-  const int led_pin = 4;             // LED flashes when message sent
+  const int led_pin = 4;              // LED flashes when message sent
   
   char msg[4];                        // Variable to send out over VW
-  float reading;
-  int floatHelper;
   int sensorValue;                    // Variable to store value from force sensor
-  int forceDigit;                     // Variable to store MSN of force
-  int forceDecimal1;                   // Variable to store decimal of force
-  int forceDecimal2;
+
 
 //////////////////////////////////////////////////////////////////////////////////////
 //                                      Setup                                       //
@@ -45,7 +40,7 @@
 void setup() {
 
 // Begin Serial (Debugging)
-  Serial.begin(9600);
+  //Serial.begin(9600);
 
 // Set up Pin I/O
   pinMode(A5, INPUT);
@@ -65,24 +60,20 @@ void loop() {
 // Read in sensor value
   sensorValue = analogRead(A5);
 
-// Convert value to voltage string (3 sig figs)
-  reading = sensorValue*convert;
-  
-  forceDigit = (int)reading;
-  forceDecimal1 = (reading-forceDigit)*10;
-  forceDecimal2 = ((reading-forceDigit)*10-forceDecimal1)*10;
-  
-  sprintf(msg, "%i.%i%i", forceDigit, forceDecimal1, forceDecimal2);
-
+// Convert sensor value (int) to character array (char[4])
+  String(sensorValue).toCharArray(msg, 4);
+ 
 // Send out message over rf
-  digitalWrite(led_pin, HIGH);
   vw_send((uint8_t *)msg, strlen(msg));
-  delay(500);
-  digitalWrite(led_pin, LOW);
+  vw_wait_tx();
 
 // Print for debug via monitor  
-   Serial.println(msg);
+   //Serial.println(sensorValue);
 }
+
+/////////////////////////////////////////////////////////////////////////////////////
+//                            Transmitter Functions                                //
+/////////////////////////////////////////////////////////////////////////////////////
 
 void vwSetup(){
   
@@ -93,5 +84,3 @@ void vwSetup(){
 // Set up virtual wire (default output pin is 12)
   vw_setup(2000);
 }
-
-
