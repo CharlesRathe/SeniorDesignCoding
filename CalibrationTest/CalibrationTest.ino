@@ -38,6 +38,7 @@
   int reading;                            // Holds reading from rf
   
   float calibratedTH;                     //Holds the calibrated threshold value from rf
+  float thresholdPercent = 0.25;          //Determines what threshold below our sampled pressure is allowed
   int sampleSize = 25;                    //Determines how many samples to take for threshold
 
   bool selecting;                         // Determines whether the user is selecting an option
@@ -200,27 +201,32 @@ bool check_pressure(){
     String msg = "";
     
     vw_rx_start();
+
+   if(vw_wait_rx_max(1000)) //wait at max 1 second for a sample
+   { 
     
-    if(vw_get_message(buf, &buflen)){
-        
-      // Print out recieved data (debugging)
-        Serial.print("Got: ");
-    
-        for(int i=0; i<buflen; i++){
-          msg += (char) buf[i];
-          Serial.print(msg[i]);
-          Serial.print(' ');
+      if(vw_get_message(buf, &buflen)){
+          
+        // Print out recieved data (debugging)
+          Serial.print("Got: ");
+      
+          for(int i=0; i<buflen; i++){
+            msg += (char) buf[i];
+            Serial.print(msg[i]);
+            Serial.print(' ');
+          }
+  
+          Serial.print("    String: ");
+          Serial.print(msg);
+  
+           if(msg.toFloat() <= calibratedTH)
+              pressure = false;
+      
+          Serial.println();
         }
-
-        Serial.print("    String: ");
-        Serial.print(msg);
-
-         if(msg.toFloat() <= 1.0)
-            pressure = false;
-    
-        Serial.println();
-      }
   }
+  pressure = false; //no pressure received from RF
+ }
   return pressure;
 }
 
@@ -430,8 +436,8 @@ void calibrate_alarm(){
       sampleSum = sampleSum + sampleTmp;
   }
 
-  //Compute threshold value - total sampleSum / total sampleSize
-  calibratedTH = sampleSum / sampleSize;
+  //Compute threshold value - total sampleSum / total sampleSize - threshold percent
+  calibratedTH = (sampleSum / sampleSize) - (  (sampleSum / sampleSize) * thresholdPercent );
 
   //Print calibration value - debugging
   Serial.print("Calibrated: ");
