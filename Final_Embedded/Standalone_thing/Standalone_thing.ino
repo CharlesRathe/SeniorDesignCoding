@@ -16,7 +16,7 @@ void setup() {
 }
 
 void loop() {
-  if(digitalRead(inputPin) == 1){
+  if(digitalRead(inputPin) == HIGH){
       digitalWrite(alarmPin, HIGH);
       delayMicroseconds(tone_delay);
       digitalWrite(alarmPin, LOW);

@@ -72,9 +72,11 @@ void setup(){
 // Set up pin I/O
   pinMode(rxPin, INPUT);  
   pinMode(alarmPin, OUTPUT);
+  digitalWrite(10, LOW);
 
 // Set up RF Transmitter and Timer 0
-  setup_transmitter();              
+  setup_transmitter(); 
+  digitalWrite(10, LOW);             
 
 // Set up LCD
   lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
@@ -210,7 +212,7 @@ bool check_pressure(){
         Serial.print("    String: ");
         Serial.print(msg);
 
-         if(msg.toFloat() >= currentTH)
+         if(msg.toFloat() <= 1.0)
             pressure = false;
     
         Serial.println();
@@ -547,6 +549,7 @@ void get_selection(){
               else if(STATE == 2){
                 print_disarming();
                 STATE = 1;
+                digitalWrite(10, LOW);
               }
             }
 

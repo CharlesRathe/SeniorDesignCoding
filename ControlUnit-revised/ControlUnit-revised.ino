@@ -80,8 +80,7 @@ void setup(){
   pinMode(alarmPin, OUTPUT);
 
 // Set up RF Transmitter and Timer 0
-  setup_transmitter();    
-  setup_timer();           
+  setup_transmitter();              
 
 // Set up LCD
   lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
@@ -91,7 +90,6 @@ void setup(){
   delay(50);
   state_zero();  
 
-  sei();
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -99,8 +97,13 @@ void setup(){
 /////////////////////////////////////////////////////////////////////
 
 void loop(){
-
+  if(STATE != 3)
     menu_state();
+  else{
+    if(enterPIN()){
+      STATE = 1;
+    }
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////
@@ -129,7 +132,7 @@ void state_zero(){
  * STATE 1 |
  **********/
 void menu_state(){
-
+  
   selecting = true;
   option = 0;
 
@@ -181,85 +184,41 @@ void menu_state(){
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
-//                                 Timer Functions                                 //
-/////////////////////////////////////////////////////////////////////////////////////
-
-void setup_timer(){
-
-// Set timer0 interrupt at 61Hz (one per minute)
-  TCCR0A = 0;// set entire TCCR0A register to 0
-  TCCR0B = 0;// same for TCCR0B
-  TCNT0  = 0;//initialize counter value to 0
-  
-// Set compare match register for 2khz increments
-  OCR0A = 255;// = (16*10^6) / (2000*64) - 1 (must be <256)
-  
-// Turn on CTC mode
-  TCCR0A |= (1 << WGM01);
-  
-// Set CS01 and CS00 bits for 1024 prescaler
-  TCCR0B |= (0 << CS01) | (1 << CS00)| (1 << CS02);
-     
-// Enable timer compare interrupt
-  TIMSK0 |= (1 << OCIE0A);
-
-}
-
-ISR(TIMER0_COMPA_vect){//timer1 interrupt 61Hz (61 cycels per second)
-
-  cli();
-  
-  if(timerCount == timerIter){
-
-    if(STATE == 2){
-
-    // Set up local variables
-      uint8_t buf[4];
-      uint8_t buflen = 4;
-      String msg = "";
-
-      vw_rx_start();
-      
-      while(rx_wait){
-      // Wait for message
-        if(vw_get_message(buf, &buflen)){
-          
-        // Exit Loop
-           rx_wait = false;
-           
-        // Print out recieved data (debugging)
-          Serial.print("Got: ");
-      
-          for(int i=0; i<buflen; i++){
-            msg += (char) buf[i];
-            Serial.print(msg[i]);
-            Serial.print(' ');
-          }
-
-          Serial.print("    String: ");
-          Serial.print(msg);
-  
-          // if(msg.toFloat() >= currentTH)
-              // soundAlarm();
-      
-          Serial.println();
-        }
-      }
-      timerCount = 0;
-    }
-  }
-  
-// Increment timer Count
-  timerCount++;
-
-  sei();
-}
-
-
-
-/////////////////////////////////////////////////////////////////////////////////////
 //                           Transmission Functions                                //
 /////////////////////////////////////////////////////////////////////////////////////
+bool check_pressure(){
+  bool pressure = true;
+  
+  if(STATE == 2){
+
+    uint8_t buf[4];
+    uint8_t buflen = 4;
+    String msg = "";
+    
+    vw_rx_start();
+    
+    if(vw_get_message(buf, &buflen)){
+        
+      // Print out recieved data (debugging)
+        Serial.print("Got: ");
+    
+        for(int i=0; i<buflen; i++){
+          msg += (char) buf[i];
+          Serial.print(msg[i]);
+          Serial.print(' ');
+        }
+
+        Serial.print("    String: ");
+        Serial.print(msg);
+
+         if(msg.toFloat() >= currentTH)
+            pressure = false;
+    
+        Serial.println();
+      }
+  }
+  return pressure;
+}
 
 void setup_transmitter(){
 
@@ -469,7 +428,7 @@ void enterNewPIN()
         // Convert ASCII character to digit and store in EEPROM
         digit = key-48;
 
-        if(digit > 1){
+        if(digit >= 1){
           EEPROM.write(digitAddr, digit);
 
         // Store new digits locally and exit loop
@@ -546,6 +505,13 @@ void enterNewPIN()
 /////////////////////////////////////////////////////////////////////////////
 
 void get_selection(){
+
+  if(!check_pressure()){
+    digitalWrite(alarmPin, HIGH);
+    STATE = 3;
+    selecting = false; 
+    entering = false;
+  }
 
  key = keypad.getKey();
   

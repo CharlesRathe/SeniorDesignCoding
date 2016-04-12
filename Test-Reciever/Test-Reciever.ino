@@ -48,7 +48,7 @@ void setup() {
 void loop() {
 
 // Delay
-  //delay(200); 
+  delay(200); 
 
   uint8_t buf[4];
   uint8_t buflen = 4;
@@ -58,21 +58,16 @@ void loop() {
   if(vw_get_message(buf, &buflen)){
 
   // Print out recieved data (debugging)
-    //Serial.print("Got: ");
+    Serial.print("Got: ");
   
     for(int i=0; i<buflen; i++){
       msg[i] = buf[i];
-      //Serial.print(msg[i]);
-      //Serial.print(' ');
+      Serial.print(msg[i]);
+      Serial.print(' ');
     }
-    
+  
     Serial.println();
-    unsigned int value = atoi (msg); 
-  Serial.print("Value=");
-  Serial.println(value);
   }
-  
-  
 }
 
 void setup_vw(){

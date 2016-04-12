@@ -28,8 +28,6 @@
   const int alarmLength_zelda = 54;       // Length of zelda alarm (# of pitches)
   const int alarmLength_two_pitch = 28;   // Length of two pitch alarm
   const int alarmPin = 10;                // Defines PIN which alarm is sent to
-  // const int transmit_PIN = 13;               // Defines which PIN recieves data from transmitter
-  // const int tiny45_PIN = ???;
   
   int addr;                               // Holds current address
   int STATE = 0;                          // Defines state of system
@@ -148,21 +146,14 @@ void setup(){
   // pinMode(tiny45_PIN, OUTPUT);
 
   //setup_transmitter();        // Set up transmitter
-  setup_timer();              // Set up timer
+  // setup_timer();              // Set up timer
   
   lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
   lcd.clear();                // Clear LCD and print intro
   
 // Setup in STATE 0
 
-    //Setup for RF transmission **************8
-   Serial.begin(9600);  // Debugging only
-   vw_set_ptt_inverted(true); // Required for DR3100
-   vw_set_rx_pin(12);
-   vw_setup(1000);  // Bits per sec
-   pinMode(13, OUTPUT);
-   vw_rx_start();       // Start the receiver PLL running
-   //RF Transmission setup end**************8
+
    
   lcd.begin(16,2);  // Set LCD for 16 columns, 2 lines
   lcd.clear();      // Clear LCD and print intro
