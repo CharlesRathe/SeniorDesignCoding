@@ -23,7 +23,7 @@
 // Global Variables
   const int eeAddr = 1;                   // Byte of EEPROM where start of PIN is
   const int digitAddr = 0;                // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
-  const int rxPin = 9;                    // Defines which PIN recieves data from transmitter
+  const int rxPin = 12;                    // Defines which PIN recieves data from transmitter
   const int alarmPin = 10;                // Defines PIN which alarm is sent to
   
   const float defaultTH = 70;             // Default pressure threshhold for alarm (V)
@@ -383,6 +383,7 @@ void print_calibration_error(){
   lcd.print("Calibration");
   lcd.setCursor(1,1);
   lcd.print("Error");
+  Serial.println("Receiver Error");
   delay(2000);
 }
 
