@@ -7,11 +7,11 @@
 //        this brings the 5v tx line down to about 3.2v so we dont fry our fps
 
 
-//*************************
+/*************************
 *
 *   Code to Enroll New Fingerprints
 *
-*************************//
+*************************/
 FPS_GT511C3 fps(3, 2);
 
 void setup()
@@ -19,6 +19,7 @@ void setup()
     Serial.begin(9600);
     delay(100);
     fps.Open();
+    Serial.print("FPS Opened");
     delay(100);
     fps.SetLED(true);
 
