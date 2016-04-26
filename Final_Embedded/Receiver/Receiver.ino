@@ -36,6 +36,8 @@
   int digit = 0;                          // Temporarily holds digits
   int currentTH = 70;                     // Current threshhold set by user (V)
   int reading;                            // Holds reading from rf
+
+  //int backlight_pin = ??;               //toggle backlight pin for power saving
   
   float calibratedTH;                     //Holds the calibrated threshold value from rf
   float thresholdPercent = 0.25;          //Determines what threshold below our sampled pressure is allowed
@@ -208,24 +210,27 @@ bool check_pressure(){
       if(vw_get_message(buf, &buflen)){
           
         // Print out recieved data (debugging)
-          Serial.print("Got: ");
+          //Serial.print("Got: ");
       
           for(int i=0; i<buflen; i++){
             msg += (char) buf[i];
-            Serial.print(msg[i]);
-            Serial.print(' ');
+            //Serial.print(msg[i]);
+            //Serial.print(' ');
           }
   
-          Serial.print("    String: ");
-          Serial.print(msg);
+          //Serial.print("    String: ");
+          //Serial.print(msg);
   
-           if(msg.toFloat() <= calibratedTH)
+           if(msg.toFloat() < calibratedTH)
               pressure = false;
       
-          Serial.println();
+          //Serial.println();
         }
   }
-  pressure = false; //no pressure received from RF
+  else{
+    pressure = false; //no pressure received from RF (receiver error)
+  }
+  
  }
   return pressure;
 }
@@ -247,7 +252,7 @@ float get_pressure()
       {
         
       // Print out recieved data (debugging)
-        Serial.print("Got: ");
+        //Serial.print("Got: ");
     
         for(int i=0; i<buflen; i++){
           msg += (char) buf[i];
@@ -255,18 +260,19 @@ float get_pressure()
           Serial.print(' ');
         }
 
-        Serial.print("    String: ");
-        Serial.print(msg);
+        //Serial.print("    String: ");
+        //Serial.print(msg);
 
          pressureSample = msg.toFloat();
     
     
-        Serial.println();
+        //Serial.println();
       }
       return pressureSample;
     }
     else{
          print_calibration_error();
+         Serial.print("No value from sensor");
          STATE = 1;
          menu_state();
     }
@@ -383,7 +389,7 @@ void print_calibration_error(){
   lcd.print("Calibration");
   lcd.setCursor(1,1);
   lcd.print("Error");
-  Serial.println("Receiver Error");
+  //Serial.println("Receiver Error");
   delay(2000);
 }
 
@@ -628,6 +634,7 @@ void get_selection(){
     STATE = 3;
     selecting = false; 
     entering = false;
+    Serial.print("ALARM");
   }
 
  key = keypad.getKey();
@@ -674,9 +681,17 @@ void get_selection(){
           }
             
           else if(option == 1){
-            if(enterPIN)
+           if(enterPIN())
               enterNewPIN();
+           else{
+              lcd.clear();
+              lcd.print("Incorrect");
+              lcd.setCursor(1,1);
+              lcd.print("Pin");
+              delay(2000);
+           }
           }
+         
            
           else if(option == 2){
             test_alarm();}

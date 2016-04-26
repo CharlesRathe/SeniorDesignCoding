@@ -1,3 +1,4 @@
+
 /**********************************************************
  *
  *  GunSafe Security System Transmitter Firmware
@@ -32,7 +33,6 @@ const int led_pin = 4;              // LED flashes when message sent
 char msg[4];                        // Variable to send out over VW
 int sensorValue;                    // Variable to store value from force sensor
 
-
 //////////////////////////////////////////////////////////////////////////////////////
 //                                      Setup                                       //
 //////////////////////////////////////////////////////////////////////////////////////
@@ -65,10 +65,19 @@ void loop() {
 
   // Send out message over rf
   vw_send((uint8_t *)msg, strlen(msg));
-  vw_wait_tx();
+  if(vx_tx_active() )
+  {
+    vw_wait_tx();
+    Serial.print("Message sent");
+  }
+ else{
+    Serial.print("Message fail to send");
+  }
+  
 
   // Print for debug via monitor
     Serial.println(sensorValue);
+  
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
