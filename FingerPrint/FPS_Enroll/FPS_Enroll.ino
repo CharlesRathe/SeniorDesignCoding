@@ -19,7 +19,7 @@ void setup()
     Serial.begin(9600);
     delay(100);
     fps.Open();
-    Serial.print("FPS Opened");
+    //Serial.print("FPS Opened");
     delay(100);
     fps.SetLED(true);
 
