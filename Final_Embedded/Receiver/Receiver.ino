@@ -21,6 +21,8 @@
   #include "pitches.h"
   #include <SPI.h>
   #include <Ethernet.h>
+  #include "FPS_GT511C3.h"
+  #include "SoftwareSerial.h"
 
 // Global Variables
   const int eeAddr = 1;                   // Byte of EEPROM where start of PIN is
@@ -83,6 +85,7 @@
   byte rowPins[ROWS] = {5, 4, 3, 2};
   byte colPins[COLS] = {8, 7, 6};
 
+  FPS_GT511C3 fps(3, 2);
   Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   LiquidCrystal lcd(13, 11, A0, A1, A2, A3);
 
@@ -93,7 +96,7 @@
 void setup(){
   
 // Set up Serial (debugging)
-  Serial.begin(9600);
+  //Serial.begin(9600);
   
 // Set up pin I/O
   pinMode(rxPin, INPUT);  
@@ -104,10 +107,19 @@ void setup(){
   setup_transmitter(); 
   digitalWrite(10, LOW);             
 
-// Set up LCD
-  lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
-  lcd.clear();                // Clear LCD and print intro
+//// Set up LCD
+//  lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
+//  lcd.clear();                // Clear LCD and print intro
+//  lcd.setCursor(1,0);
+//  lcd.print("SUP NEGRO");
 
+ // delay(5000); //delay to put rx and tx back in if needed
+// Set up FPS
+  setupFPS();
+
+//  lcd.clear();
+//lcd.setCursor(1,0);
+//  lcd.print("BALLZ");
 // Short delay, then go to setup state
   delay(50);
   state_zero();  
@@ -126,7 +138,7 @@ void loop(){
     
 // Else, Alarm ON, need to turn off alarm
   else{
-    textAlarm();
+    
     if(enterPIN()){
       STATE = 1;
       digitalWrite(alarmPin, LOW);
@@ -277,8 +289,8 @@ float get_pressure()
     
         for(int i=0; i<buflen; i++){
           msg += (char) buf[i];
-          Serial.print(msg[i]);
-          Serial.print(' ');
+          //Serial.print(msg[i]);
+          //Serial.print(' ');
         }
 
         //Serial.print("    String: ");
@@ -293,7 +305,7 @@ float get_pressure()
     }
     else{
          print_calibration_error();
-         Serial.print("No value from sensor");
+         //Serial.print("No value from sensor");
          STATE = 1;
          menu_state();
     }
@@ -410,7 +422,7 @@ void print_calibration_error(){
   lcd.print("Calibration");
   lcd.setCursor(1,1);
   lcd.print("Error");
-  //Serial.println("Receiver Error");
+  ////Serial.println("Receiver Error");
   delay(2000);
 }
 
@@ -458,8 +470,8 @@ void calibrate_alarm(){
   //Gather samples, keep record of total sum for average computation
   for(int i=0;i<sampleSize;i++)
   {
-      Serial.print("Sample:");
-      Serial.println(i);
+      //Serial.print("Sample:");
+      //Serial.println(i);
       sampleTmp = get_pressure();
       sampleSum = sampleSum + sampleTmp;
   }
@@ -468,8 +480,8 @@ void calibrate_alarm(){
   calibratedTH = (sampleSum / sampleSize) - (  (sampleSum / sampleSize) * thresholdPercent );
 
   //Print calibration value - debugging
-  Serial.print("Calibrated: ");
-  Serial.println(calibratedTH);
+  //Serial.print("Calibrated: ");
+  //Serial.println(calibratedTH);
 
   //Display calibrated complete
   print_calibrated();
@@ -655,7 +667,8 @@ void get_selection(){
     STATE = 3;
     selecting = false; 
     entering = false;
-    Serial.print("ALARM");
+    //Serial.print("ALARM");
+    textAlarm();
   }
 
  key = keypad.getKey();
@@ -748,7 +761,7 @@ void textAlarm()
   }
   else
   {
-    Serial.println(F("Connection failed"));
+    //Serial.println(F("Connection failed"));
   } 
 
   // Check for a response from the server, and route it
@@ -758,29 +771,146 @@ void textAlarm()
     if ( client.available() )
     {
       char c = client.read();
-      Serial.print(c);
+      //Serial.print(c);
     }      
   }
-  Serial.println();
+  //Serial.println();
   client.stop();
 
 }
 void setupEthernet()
 {
-  Serial.println("Setting up Ethernet...");
+  //Serial.println("Setting up Ethernet...");
   // start the Ethernet connection:
   if (Ethernet.begin(mac) == 0) {
-    Serial.println(F("Failed to configure Ethernet using DHCP"));
+    //Serial.println(F("Failed to configure Ethernet using DHCP"));
     // no point in carrying on, so do nothing forevermore:
     // try to congifure using IP address instead of DHCP:
     Ethernet.begin(mac, ip);
   }
-  Serial.print("My IP address: ");
-  Serial.println(Ethernet.localIP());
+  //Serial.print("My IP address: ");
+  //Serial.println(Ethernet.localIP());
   // give the Ethernet shield a second to initialize:
   delay(1000);
 }
 
-
+void setupFPS()
+{
+  fps.UseSerialDebug = false;
+  delay(1000);
+//  lcd.clear();
+//lcd.setCursor(1,0);
+//  lcd.print("Open FPS");
+  
+  fps.Open();
+  delay(1000);
+  blinkyFPS();
+//  lcd.clear();
+//lcd.setCursor(1,0);
+//  lcd.print("HURRAY");
+//  fps.SetLED(true); 
 }
+
+boolean checkFingerPrint()
+{
+  boolean fingerPrint; //True if valid, false if not
+  
+  // Identify fingerprint test
+  if (fps.IsPressFinger())
+  {
+    fps.CaptureFinger(false);
+    int id = fps.Identify1_N();
+    if (id <200)
+    {
+      //Serial.print("Verified ID:");
+      //Serial.println(id);
+      fingerPrint = true;
+      
+    }
+    else
+    {
+      //Serial.println("Finger not found");
+      fingerPrint = false;
+    }
+  }
+  else
+  {
+    //Serial.println("Please press finger");
+    fingerPrint = false;
+  }
+  delay(100);
+  
+  return fingerPrint;
+}
+
+void Enroll()
+{
+    // Enroll test
+
+    // find open enroll id
+    int enrollid = 0;
+    bool usedid = true;
+    while (usedid == true)
+    {
+        usedid = fps.CheckEnrolled(enrollid);
+        if (usedid==true) enrollid++;
+    }
+    fps.EnrollStart(enrollid);
+
+    // enroll
+    //Serial.print("Press finger to Enroll #");
+    //Serial.println(enrollid);
+    while(fps.IsPressFinger() == false) delay(100);
+    bool bret = fps.CaptureFinger(true);
+    int iret = 0;
+    if (bret != false)
+    {
+        //Serial.println("Remove finger");
+        fps.Enroll1();
+        while(fps.IsPressFinger() == true) delay(100);
+        //Serial.println("Press same finger again");
+        while(fps.IsPressFinger() == false) delay(100);
+        bret = fps.CaptureFinger(true);
+        if (bret != false)
+        {
+            //Serial.println("Remove finger");
+            fps.Enroll2();
+            while(fps.IsPressFinger() == true) delay(100);
+            //Serial.println("Press same finger yet again");
+            while(fps.IsPressFinger() == false) delay(100);
+            bret = fps.CaptureFinger(true);
+            if (bret != false)
+            {
+                //Serial.println("Remove finger");
+                iret = fps.Enroll3();
+                if (iret == 0)
+                {
+                    //Serial.println("Enrolling Successfull");
+                }
+                else
+                {
+                    //Serial.print("Enrolling Failed with error code:");
+                    //Serial.println(iret);
+                
+                }
+            }
+            else; //Serial.println("Failed to capture third finger");
+        }
+        else; //Serial.println("Failed to capture second finger");
+    }
+    else; //Serial.println("Failed to capture first finger");
+}
+
+void blinkyFPS()
+{
+  while(1){
+   // FPS Blink LED Test
+    fps.SetLED(true); // turn on the LED inside the fps
+  delay(1000);
+  fps.SetLED(false);// turn off the LED inside the fps
+  delay(1000);
+  }
+}
+
+
 

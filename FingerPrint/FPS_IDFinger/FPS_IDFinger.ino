@@ -16,13 +16,18 @@
 //	  digital pin 5(arduino tx - 560ohm resistor fps tx - 1000ohm resistor - ground)
 //		this brings the 5v tx line down to about 3.2v so we dont fry our fps
 
-FPS_GT511C3 fps(3, 2);
+FPS_GT511C3 fps(3,2);
+//FPS_GT511C3 fps(13, 14);
 
 void setup()
 {
 	Serial.begin(9600);
+ Serial.println("WTF");
 	delay(100);
+  Serial.println("open");
+   fps.UseSerialDebug = true;
 	fps.Open();
+ Serial.println("SET LED");
 	fps.SetLED(true);
 }
 
