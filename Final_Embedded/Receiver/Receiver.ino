@@ -21,16 +21,16 @@
   #include "pitches.h"
   #include <SPI.h>
   #include <Ethernet.h>
-  #include "FPS_GT511C3.h"
-  #include "SoftwareSerial.h"
+  //#include "FPS_GT511C3.h"
+  //#include "SoftwareSerial.h"
 
 // Global Variables
   const int eeAddr = 1;                   // Byte of EEPROM where start of PIN is
   const int digitAddr = 0;                // Byte of EEPROM where number of digits in PIN is stored: if 0, pick PIN
-  const int rxPin = 12;                    // Defines which PIN recieves data from transmitter
+  const int rxPin = A4;                    // Defines which PIN recieves data from transmitter
   const int alarmPin = 10;                // Defines PIN which alarm is sent to
   
-  const float defaultTH = 70;             // Default pressure threshhold for alarm (V)
+  const float defaultTH = 1;             // Default pressure threshhold for alarm (V)
   
   int addr;                               // Holds current address
   int STATE = 0;                          // Defines state of system (Disarmed -> 1)
@@ -38,7 +38,7 @@
   int option = 0;                         // Holds current menu option
   int count = 0;                          // Generic counting variable
   int digit = 0;                          // Temporarily holds digits
-  int currentTH = 70;                     // Current threshhold set by user (V)
+  int currentTH = 2;                     // Current threshhold set by user (V)
   int reading;                            // Holds reading from rf
 
   //int backlight_pin = ??;               //toggle backlight pin for power saving
@@ -50,6 +50,7 @@
   bool selecting;                         // Determines whether the user is selecting an option
   bool entering;                          // Determines whether the user is entering a PIN
   bool isValid;                           // Return value after validating PIN
+  bool text = false;
   
   char key;                               // Holds characters read from KeyPad
   char newPIN[9];                         // Holds user-entered PIN
@@ -82,13 +83,14 @@
     {'7','8','9'},
     {'*','0','#'}};
 
-  byte rowPins[ROWS] = {5, 4, 3, 2};
-  byte colPins[COLS] = {8, 7, 6};
-
-  FPS_GT511C3 fps(3, 2);
+ // byte rowPins[ROWS] = {5, 4, 3, 2};
+  //byte colPins[COLS] = {8, 7, 6};
+  byte rowPins[ROWS] = {9, 8, 7, 6};
+  byte colPins[COLS] = {5, 2, 3};
+ // FPS_GT511C3 fps(3, 2);
   Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
   LiquidCrystal lcd(13, 11, A0, A1, A2, A3);
-
+  //LiquidCrystal lcd(A4, A5, A0, A1, A2, A3);
 ////////////////////////////////////////////////////////////////////
 //                          Setup                                 //
 ////////////////////////////////////////////////////////////////////
@@ -97,29 +99,29 @@ void setup(){
   
 // Set up Serial (debugging)
   //Serial.begin(9600);
-  
+  // setupEthernet();
+
+   
 // Set up pin I/O
   pinMode(rxPin, INPUT);  
   pinMode(alarmPin, OUTPUT);
-  digitalWrite(10, LOW);
+  digitalWrite(alarmPin, LOW);
 
 // Set up RF Transmitter and Timer 0
-  setup_transmitter(); 
-  digitalWrite(10, LOW);             
+  //setup_transmitter(); 
+  digitalWrite(alarmPin, LOW);
+
+ 
 
 //// Set up LCD
-//  lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
-//  lcd.clear();                // Clear LCD and print intro
-//  lcd.setCursor(1,0);
-//  lcd.print("SUP NEGRO");
+  lcd.begin(16,2);            // Set LCD for 16 columns, 2 lines
+  lcd.clear();                // Clear LCD and print intro
+  
 
- // delay(5000); //delay to put rx and tx back in if needed
+  delay(1000); //delay to put rx and tx back in if needed
 // Set up FPS
-  setupFPS();
+ // setupFPS();
 
-//  lcd.clear();
-//lcd.setCursor(1,0);
-//  lcd.print("BALLZ");
 // Short delay, then go to setup state
   delay(50);
   state_zero();  
@@ -209,13 +211,18 @@ void menu_state(){
       lcd.setCursor(1,1);
       lcd.print("<- CHECKALARM->");
     }
+    
+    else if(option == 3){
+      lcd.setCursor(1,1);
+      lcd.print("<-TOGGLE TEXT->");
+    }
 
   // This option allows the user to change the alarm to one of several presets
-    else{
+    else if(option == 4){
       lcd.setCursor(1,1);
       lcd.print("<- CALIBRATE ->");
     }
-
+    
     // Get user selection
      while(entering){
         get_selection();
@@ -227,101 +234,100 @@ void menu_state(){
 //                           Transmission Functions                                //
 /////////////////////////////////////////////////////////////////////////////////////
 bool check_pressure(){
-  bool pressure = true;
-  
-  if(STATE == 2){
+//  bool pressure = true;
+//  
+//  if(STATE == 2){
+//    Serial.println(analogRead(A4));
+//    if(analogRead(A4) < currentTH){
+//      pressure = false;
+//    }
 
-    uint8_t buf[4];
-    uint8_t buflen = 4;
-    String msg = "";
+//    uint8_t buf[4];
+//    uint8_t buflen = 4;
+//    String msg = "";
     
-    vw_rx_start();
-
-   if(vw_wait_rx_max(1000)) //wait at max 1 second for a sample
-   { 
-    
-      if(vw_get_message(buf, &buflen)){
-          
-        // Print out recieved data (debugging)
-          //Serial.print("Got: ");
-      
-          for(int i=0; i<buflen; i++){
-            msg += (char) buf[i];
-            //Serial.print(msg[i]);
-            //Serial.print(' ');
-          }
+//    vw_rx_start();
+//
+//   if(vw_wait_rx_max(1000)) //wait at max 1 second for a sample
+//   { 
+//    
+//      if(vw_get_message(buf, &buflen)){
+//          
+//        // Print out recieved data (debugging)
+//          //Serial.print("Got: ");
+//      
+//          for(int i=0; i<buflen; i++){
+//            msg += (char) buf[i];
+//            //Serial.print(msg[i]);
+//            //Serial.print(' ');
+//          }
+//  
+//          //Serial.print("    String: ");
+//          //Serial.print(msg);
+//  
+//           if(msg.toFloat() < calibratedTH)
+//              pressure = false;
+//      
+//          //Serial.println();
+//        }
+// }
   
-          //Serial.print("    String: ");
-          //Serial.print(msg);
-  
-           if(msg.toFloat() < calibratedTH)
-              pressure = false;
-      
-          //Serial.println();
-        }
-  }
-  else{
-    pressure = false; //no pressure received from RF (receiver error)
-  }
-  
- }
-  return pressure;
+  return true;
 }
 
 //get a pressure value from the transmitter
 float get_pressure()
 {
 
-    uint8_t buf[4];
-    uint8_t buflen = 4;
-    String msg = "";
+//    uint8_t buf[4];
+//    uint8_t buflen = 4;
+//    String msg = "";
     float pressureSample;
     
-    vw_rx_start();
-
-    if(vw_wait_rx_max(1000) ) //wait at max 1 second for a sample
-    {
-      if(vw_get_message(buf, &buflen) )
-      {
-        
-      // Print out recieved data (debugging)
-        //Serial.print("Got: ");
-    
-        for(int i=0; i<buflen; i++){
-          msg += (char) buf[i];
-          //Serial.print(msg[i]);
-          //Serial.print(' ');
-        }
+//    vw_rx_start();
+//
+//    if(vw_wait_rx_max(1000) ) //wait at max 1 second for a sample
+//    {
+//      if(vw_get_message(buf, &buflen) )
+//      {
+//        
+//      // Print out recieved data (debugging)
+//        //Serial.print("Got: ");
+//    
+//        for(int i=0; i<buflen; i++){
+//          msg += (char) buf[i];
+//          //Serial.print(msg[i]);
+//          //Serial.print(' ');
+//        }
 
         //Serial.print("    String: ");
         //Serial.print(msg);
 
-         pressureSample = msg.toFloat();
+//         pressureSample = msg.toFloat();
+            pressureSample = 10;
     
     
         //Serial.println();
-      }
       return pressureSample;
-    }
-    else{
-         print_calibration_error();
-         //Serial.print("No value from sensor");
-         STATE = 1;
-         menu_state();
-    }
+//    else{
+//         print_calibration_error();
+//         //Serial.print("No value from sensor");
+//         STATE = 1;
+//         menu_state();
+//    }
     
 
   
 }
 
 
-void setup_transmitter(){
-
-// Configure pins/settings
-  vw_set_rx_pin(rxPin);
-  vw_set_ptt_inverted(true);
-  vw_setup(2000);
-}
+//void setup_transmitter(){
+//
+//// Configure pins/settings
+//  vw_set_rx_pin(rxPin);
+//  vw_set_ptt_inverted(true);
+//  vw_setup(2000);
+//}
 
 /////////////////////////////////////////////////////////////////////////////////////
 //                                Display Functions                                //
@@ -440,8 +446,11 @@ void test_alarm(){
 
     print_disable_alarm();
     delay(100);
-    digitalWrite(10, HIGH);
+    digitalWrite(alarmPin, HIGH);
     bool testing = true;
+    if(text){
+      textAlarm();
+    }
 
     while(testing){
 
@@ -455,29 +464,29 @@ void test_alarm(){
       }
     }
     
-    digitalWrite(10, LOW);
+    digitalWrite(alarmPin, LOW);
 }
 
 void calibrate_alarm(){
-
-  float sampleTmp;                 //float to hold a sample pressure value from rf
-  float sampleSum=0;               //float to hold sum of all gathered samples
-
-
-  //Display calibrating in progress
-  print_calbrating();               
-
-  //Gather samples, keep record of total sum for average computation
-  for(int i=0;i<sampleSize;i++)
-  {
-      //Serial.print("Sample:");
-      //Serial.println(i);
-      sampleTmp = get_pressure();
-      sampleSum = sampleSum + sampleTmp;
-  }
-
-  //Compute threshold value - total sampleSum / total sampleSize - threshold percent
-  calibratedTH = (sampleSum / sampleSize) - (  (sampleSum / sampleSize) * thresholdPercent );
+//
+//  float sampleTmp;                 //float to hold a sample pressure value from rf
+//  float sampleSum=0;               //float to hold sum of all gathered samples
+//
+//
+//  //Display calibrating in progress
+//  print_calbrating();               
+//
+//  //Gather samples, keep record of total sum for average computation
+//  for(int i=0;i<sampleSize;i++)
+//  {
+//      //Serial.print("Sample:");
+//      //Serial.println(i);
+//      sampleTmp = get_pressure();
+//      sampleSum = sampleSum + sampleTmp;
+//  }
+//
+//  //Compute threshold value - total sampleSum / total sampleSize - threshold percent
+//  calibratedTH = (sampleSum / sampleSize) - (  (sampleSum / sampleSize) * thresholdPercent );
 
   //Print calibration value - debugging
   //Serial.print("Calibrated: ");
@@ -668,7 +677,9 @@ void get_selection(){
     selecting = false; 
     entering = false;
     //Serial.print("ALARM");
-    textAlarm();
+    if(text){
+      textAlarm();
+    }
   }
 
  key = keypad.getKey();
@@ -678,18 +689,35 @@ void get_selection(){
   {
     // If key is 6, increment menu
     if(key == '6'){
-      if(option != 3)
-          option += 1;
-      else
-          option = 0;
+      if(STATE == 2){
+        if(option != 3)
+            option++;
+        else
+            option = 0;
+      }
+      else{
+        if(option != 4)
+          option++;
+        else
+          option=0;
+        }
     }
     
     // If key is 4, decrement menu
     else if(key == '4'){
-      if(option != 0)
+      if(STATE == 1){
+        if(option != 0)
+            option -= 1;
+        else
+            option = 4;
+      }
+
+      else{
+        if(option!=0)
           option -= 1;
-      else
+        else
           option = 3;
+      }
     }
 
     // If '#' select option
@@ -706,7 +734,7 @@ void get_selection(){
               else if(STATE == 2){
                 print_disarming();
                 STATE = 1;
-                digitalWrite(10, LOW);
+                digitalWrite(alarmPin, LOW);
               }
             }
 
@@ -730,9 +758,13 @@ void get_selection(){
           else if(option == 2){
             test_alarm();}
 
-          else
+          else if(option == 3)
             calibrate_alarm();
 
+          else if(option == 4){
+            text = !text;
+          }
+          
             selecting = false;
     }
     entering = false; 
@@ -741,7 +773,7 @@ void get_selection(){
 
 void textAlarm()
 {
-  setupEthernet();
+  //setupEthernet();
 
  // Make a TCP connection to remote host
   if (client.connect(server, 80))
@@ -794,123 +826,123 @@ void setupEthernet()
   delay(1000);
 }
 
-void setupFPS()
-{
-  fps.UseSerialDebug = false;
-  delay(1000);
-//  lcd.clear();
-//lcd.setCursor(1,0);
-//  lcd.print("Open FPS");
-  
-  fps.Open();
-  delay(1000);
-  blinkyFPS();
-//  lcd.clear();
-//lcd.setCursor(1,0);
-//  lcd.print("HURRAY");
-//  fps.SetLED(true); 
-}
+//void setupFPS()
+//{
+//  fps.UseSerialDebug = false;
+//  delay(1000);
+////  lcd.clear();
+////lcd.setCursor(1,0);
+////  lcd.print("Open FPS");
+//  
+//  fps.Open();
+//  delay(1000);
+//  blinkyFPS();
+////  lcd.clear();
+////lcd.setCursor(1,0);
+////  lcd.print("HURRAY");
+////  fps.SetLED(true); 
+//}
 
-boolean checkFingerPrint()
-{
-  boolean fingerPrint; //True if valid, false if not
-  
-  // Identify fingerprint test
-  if (fps.IsPressFinger())
-  {
-    fps.CaptureFinger(false);
-    int id = fps.Identify1_N();
-    if (id <200)
-    {
-      //Serial.print("Verified ID:");
-      //Serial.println(id);
-      fingerPrint = true;
-      
-    }
-    else
-    {
-      //Serial.println("Finger not found");
-      fingerPrint = false;
-    }
-  }
-  else
-  {
-    //Serial.println("Please press finger");
-    fingerPrint = false;
-  }
-  delay(100);
-  
-  return fingerPrint;
-}
+//boolean checkFingerPrint()
+//{
+//  boolean fingerPrint; //True if valid, false if not
+//  
+//  // Identify fingerprint test
+//  if (fps.IsPressFinger())
+//  {
+//    fps.CaptureFinger(false);
+//    int id = fps.Identify1_N();
+//    if (id <200)
+//    {
+//      //Serial.print("Verified ID:");
+//      //Serial.println(id);
+//      fingerPrint = true;
+//      
+//    }
+//    else
+//    {
+//      //Serial.println("Finger not found");
+//      fingerPrint = false;
+//    }
+//  }
+//  else
+//  {
+//    //Serial.println("Please press finger");
+//    fingerPrint = false;
+//  }
+//  delay(100);
+//  
+//  return fingerPrint;
+//}
+//
+//void Enroll()
+//{
+//    // Enroll test
+//
+//    // find open enroll id
+//    int enrollid = 0;
+//    bool usedid = true;
+//    while (usedid == true)
+//    {
+//        usedid = fps.CheckEnrolled(enrollid);
+//        if (usedid==true) enrollid++;
+//    }
+//    fps.EnrollStart(enrollid);
+//
+//    // enroll
+//    //Serial.print("Press finger to Enroll #");
+//    //Serial.println(enrollid);
+//    while(fps.IsPressFinger() == false) delay(100);
+//    bool bret = fps.CaptureFinger(true);
+//    int iret = 0;
+//    if (bret != false)
+//    {
+//        //Serial.println("Remove finger");
+//        fps.Enroll1();
+//        while(fps.IsPressFinger() == true) delay(100);
+//        //Serial.println("Press same finger again");
+//        while(fps.IsPressFinger() == false) delay(100);
+//        bret = fps.CaptureFinger(true);
+//        if (bret != false)
+//        {
+//            //Serial.println("Remove finger");
+//            fps.Enroll2();
+//            while(fps.IsPressFinger() == true) delay(100);
+//            //Serial.println("Press same finger yet again");
+//            while(fps.IsPressFinger() == false) delay(100);
+//            bret = fps.CaptureFinger(true);
+//            if (bret != false)
+//            {
+//                //Serial.println("Remove finger");
+//                iret = fps.Enroll3();
+//                if (iret == 0)
+//                {
+//                    //Serial.println("Enrolling Successfull");
+//                }
+//                else
+//                {
+//                    //Serial.print("Enrolling Failed with error code:");
+//                    //Serial.println(iret);
+//                
+//                }
+//            }
+//            else; //Serial.println("Failed to capture third finger");
+//        }
+//        else; //Serial.println("Failed to capture second finger");
+//    }
+//    else; //Serial.println("Failed to capture first finger");
+//}
 
-void Enroll()
-{
-    // Enroll test
-
-    // find open enroll id
-    int enrollid = 0;
-    bool usedid = true;
-    while (usedid == true)
-    {
-        usedid = fps.CheckEnrolled(enrollid);
-        if (usedid==true) enrollid++;
-    }
-    fps.EnrollStart(enrollid);
-
-    // enroll
-    //Serial.print("Press finger to Enroll #");
-    //Serial.println(enrollid);
-    while(fps.IsPressFinger() == false) delay(100);
-    bool bret = fps.CaptureFinger(true);
-    int iret = 0;
-    if (bret != false)
-    {
-        //Serial.println("Remove finger");
-        fps.Enroll1();
-        while(fps.IsPressFinger() == true) delay(100);
-        //Serial.println("Press same finger again");
-        while(fps.IsPressFinger() == false) delay(100);
-        bret = fps.CaptureFinger(true);
-        if (bret != false)
-        {
-            //Serial.println("Remove finger");
-            fps.Enroll2();
-            while(fps.IsPressFinger() == true) delay(100);
-            //Serial.println("Press same finger yet again");
-            while(fps.IsPressFinger() == false) delay(100);
-            bret = fps.CaptureFinger(true);
-            if (bret != false)
-            {
-                //Serial.println("Remove finger");
-                iret = fps.Enroll3();
-                if (iret == 0)
-                {
-                    //Serial.println("Enrolling Successfull");
-                }
-                else
-                {
-                    //Serial.print("Enrolling Failed with error code:");
-                    //Serial.println(iret);
-                
-                }
-            }
-            else; //Serial.println("Failed to capture third finger");
-        }
-        else; //Serial.println("Failed to capture second finger");
-    }
-    else; //Serial.println("Failed to capture first finger");
-}
-
-void blinkyFPS()
-{
-  while(1){
-   // FPS Blink LED Test
-    fps.SetLED(true); // turn on the LED inside the fps
-  delay(1000);
-  fps.SetLED(false);// turn off the LED inside the fps
-  delay(1000);
-  }
-}
+//void blinkyFPS()
+//{
+//  while(1){
+//   // FPS Blink LED Test
+//    fps.SetLED(true); // turn on the LED inside the fps
+//  delay(1000);
+//  fps.SetLED(false);// turn off the LED inside the fps
+//  delay(1000);
+//  }
+//}
 
 
 

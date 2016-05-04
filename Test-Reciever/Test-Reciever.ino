@@ -26,7 +26,7 @@
 // Global Variables
   float reading;
 
-  const int inputPin = 9;
+  const int inputPin = 12;
 
 void setup() {
   
@@ -55,6 +55,8 @@ void loop() {
   char msg[4];
   
 // Wait for message
+if(vw_wait_rx_max(2000)) //wait at max 1 second for a sample
+   { 
   if(vw_get_message(buf, &buflen)){
 
   // Print out recieved data (debugging)
@@ -68,6 +70,10 @@ void loop() {
   
     Serial.println();
   }
+   }
+   else{
+    Serial.println("Timeout");
+   }
 }
 
 void setup_vw(){

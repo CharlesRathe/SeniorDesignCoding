@@ -58,22 +58,22 @@ void setup() {
 void loop() {
 
   // Read in sensor value
-  sensorValue = analogRead(A5);
+  sensorValue = analogRead(A4);
 
-  // Convert sensor value (int) to character array (char[4])
-  String(sensorValue).toCharArray(msg, 4);
-
-  // Send out message over rf
-  vw_send((uint8_t *)msg, strlen(msg));
-  if(vx_tx_active() )
-  {
-    vw_wait_tx();
-    Serial.print("Message sent");
-  }
- else{
-    Serial.print("Message fail to send");
-  }
-  
+//  // Convert sensor value (int) to character array (char[4])
+//  String(sensorValue).toCharArray(msg, 4);
+//
+//  // Send out message over rf
+//  vw_send((uint8_t *)msg, strlen(msg));
+//  if(vx_tx_active() )
+//  {
+//    vw_wait_tx();
+//    Serial.print("Message sent");
+//  }
+// else{
+//    Serial.print("Message fail to send");
+//  }
+//  
 
   // Print for debug via monitor
     Serial.println(sensorValue);
